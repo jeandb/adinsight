@@ -23,7 +23,16 @@
       "Bash(netstat -ano)",
       "Bash(findstr :3001)",
       "Bash(findstr LISTENING)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Read(//c/Users/jeanb/.claude/skills/webapp-testing/**)",
+      "Bash(python scripts/with_server.py --help)",
+      "Bash(py --version)",
+      "Bash(where python:*)",
+      "Bash(py -3 --version)",
+      "Bash(py -3 -c \"import playwright; print\\(''playwright ok''\\)\")",
+      "Bash(where node:*)",
+      "Bash(pnpm --filter api db:migrate)",
+      "Bash(pnpm --filter api db:seed)"
     ]
   }
 }

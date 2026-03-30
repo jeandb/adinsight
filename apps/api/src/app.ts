@@ -7,6 +7,7 @@ import { errorMiddleware } from './shared/middleware/error.middleware'
 import { authRoutes } from './modules/auth/auth.routes'
 import { usersRoutes } from './modules/users/users.routes'
 import { platformsRoutes } from './modules/platforms/platforms.routes'
+import { channelsRoutes } from './modules/channels/channels.routes'
 
 const app: Application = express()
 
@@ -21,6 +22,7 @@ app.get('/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/platforms', platformsRoutes)
+app.use('/api/channels', channelsRoutes)
 
 app.use(errorMiddleware)
 

@@ -6,6 +6,7 @@ import { ActivatePage } from './features/auth/ActivatePage'
 import { AppShell } from './components/layout/AppShell'
 import { UsersPage } from './features/admin/users/UsersPage'
 import { PlatformsPage } from './features/admin/platforms/PlatformsPage'
+import { ChannelsPage } from './features/admin/channels/ChannelsPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
 import { UserRole } from '@adinsight/shared-types'
@@ -120,6 +121,14 @@ export function Router() {
               element={
                 <RequireAuth roles={[UserRole.ADMIN]}>
                   <PlatformsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/channels"
+              element={
+                <RequireAuth roles={[UserRole.ADMIN, UserRole.TRAFFIC_MANAGER]}>
+                  <ChannelsPage />
                 </RequireAuth>
               }
             />
