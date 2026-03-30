@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__filesystem__directory_tree",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__list_directory",
+      "mcp__filesystem__search_files",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(cat EOF onlyBuiltDependencies[]=bcrypt onlyBuiltDependencies[]=esbuild EOF pnpm install)",
+      "Bash(pnpm --filter @adinsight/shared-types build)",
+      "Bash(pnpm --filter @adinsight/api type-check)",
+      "Bash(pnpm --filter @adinsight/web type-check)",
+      "Bash(cd:*)",
+      "Bash(docker compose:*)",
+      "Bash(pnpm db:migrate)",
+      "Bash(pnpm --filter @adinsight/api remove bcrypt)",
+      "Bash(pnpm --filter @adinsight/api add bcryptjs)",
+      "Bash(pnpm --filter @adinsight/api add -D @types/bcryptjs)",
+      "Bash(pnpm --filter @adinsight/api add nodemailer)",
+      "Bash(pnpm --filter @adinsight/api add -D @types/nodemailer)",
+      "Bash(pnpm --filter @adinsight/web add @radix-ui/react-dialog @radix-ui/react-select @radix-ui/react-label)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :3001)",
+      "Bash(findstr LISTENING)",
+      "Bash(taskkill:*)"
+    ]
+  }
+}
