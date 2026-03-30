@@ -64,7 +64,7 @@ export const platformsApi = {
     apiClient.get<{ data: PlatformItem[] }>('/platforms').then((r) => r.data.data),
 
   saveCredentials: (type: PlatformType, credentials: Record<string, string>) =>
-    apiClient.put<{ data: PlatformItem }>(`/platforms/${type}/credentials`, { credentials }).then((r) => r.data.data),
+    apiClient.put<{ data: PlatformItem }>(`/platforms/${type}/credentials`, credentials).then((r) => r.data.data),
 
   testConnection: (type: PlatformType) =>
     apiClient.post<{ data: { success: boolean; message: string } }>(`/platforms/${type}/test-connection`).then((r) => r.data.data),

@@ -34,8 +34,10 @@ export const platformsRepository = {
   ): Promise<void> {
     await db.query(
       `UPDATE ad_platforms
-       SET status = $1, last_error = $2, last_sync_at = CASE WHEN $1 = 'ACTIVE' THEN NOW() ELSE last_sync_at END
-       WHERE type = $3`,
+       SET status = $1::platform_status,
+           last_error = $2,
+           last_sync_at = CASE WHEN $1::text = 'ACTIVE' THEN NOW() ELSE last_sync_at END
+       WHERE type = $3::platform_type`,
       [status, lastError ?? null, type],
     )
   },

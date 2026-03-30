@@ -188,7 +188,7 @@ function PlatformCard({
                   onChange={(e) =>
                     setCredentials((prev) => ({ ...prev, [field.key]: e.target.value }))
                   }
-                  placeholder={field.placeholder ?? '••••••••'}
+                  placeholder={platform.hasCredentials ? '••••••••' : (field.placeholder ?? '••••••••')}
                   className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                 />
               </div>
