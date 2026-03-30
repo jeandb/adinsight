@@ -131,7 +131,7 @@ export function UsersPage() {
         </Dialog>
       </div>
 
-      <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl">
         {isLoading ? (
           <div className="p-8 text-center text-muted-foreground text-sm">Carregando...</div>
         ) : (

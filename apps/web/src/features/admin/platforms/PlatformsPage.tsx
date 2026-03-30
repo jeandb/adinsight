@@ -10,8 +10,13 @@ import {
 } from './platforms.api'
 import { cn } from '@/lib/utils'
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; label: string; className: string }> = {
   CONNECTED: {
+    icon: CheckCircle2,
+    label: 'Conectado',
+    className: 'text-green-600 bg-green-50 border-green-200',
+  },
+  ACTIVE: {
     icon: CheckCircle2,
     label: 'Conectado',
     className: 'text-green-600 bg-green-50 border-green-200',
@@ -19,6 +24,11 @@ const STATUS_CONFIG = {
   DISCONNECTED: {
     icon: XCircle,
     label: 'Desconectado',
+    className: 'text-gray-500 bg-gray-50 border-gray-200',
+  },
+  NOT_CONFIGURED: {
+    icon: XCircle,
+    label: 'Não configurado',
     className: 'text-gray-500 bg-gray-50 border-gray-200',
   },
   ERROR: {
@@ -87,7 +97,7 @@ function PlatformCard({
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
 
   const fields = PLATFORM_FIELDS[platform.type]
-  const statusCfg = STATUS_CONFIG[platform.status]
+  const statusCfg = STATUS_CONFIG[platform.status] ?? STATUS_CONFIG.DISCONNECTED
   const StatusIcon = statusCfg.icon
 
   const save = useMutation({

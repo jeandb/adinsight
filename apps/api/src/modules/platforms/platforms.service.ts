@@ -4,11 +4,17 @@ import { platformsRepository } from './platforms.repository'
 import { PLATFORM_CREDENTIAL_FIELDS } from './platforms.types'
 import type { PlatformType, PlatformCredentials } from './platforms.types'
 
+function mapStatus(dbStatus: string): 'CONNECTED' | 'DISCONNECTED' | 'ERROR' {
+  if (dbStatus === 'ACTIVE') return 'CONNECTED'
+  if (dbStatus === 'ERROR') return 'ERROR'
+  return 'DISCONNECTED' // NOT_CONFIGURED
+}
+
 function sanitizePlatform(row: Awaited<ReturnType<typeof platformsRepository.findAll>>[0]) {
   return {
     id: row.id,
     type: row.type,
-    status: row.status,
+    status: mapStatus(row.status),
     hasCredentials: row.credentials_encrypted !== null,
     lastSyncAt: row.last_sync_at,
     lastError: row.last_error,
