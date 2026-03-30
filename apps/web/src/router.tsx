@@ -7,24 +7,10 @@ import { AppShell } from './components/layout/AppShell'
 import { UsersPage } from './features/admin/users/UsersPage'
 import { PlatformsPage } from './features/admin/platforms/PlatformsPage'
 import { ChannelsPage } from './features/admin/channels/ChannelsPage'
+import { DashboardPage } from './features/dashboard/DashboardPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
 import { UserRole } from '@adinsight/shared-types'
-
-function DashboardPlaceholder() {
-  const user = useAuthStore((s) => s.user)
-  return (
-    <div className="flex flex-col gap-2">
-      <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-      <p className="text-muted-foreground">
-        Bem-vindo, <strong>{user?.name}</strong>. Etapa 4 implementará o dashboard completo.
-      </p>
-      <div className="mt-4 p-4 rounded-lg border border-border bg-card text-sm text-muted-foreground">
-        Role atual: <strong className="text-foreground">{user?.role}</strong>
-      </div>
-    </div>
-  )
-}
 
 function RequireAuth({ children, roles }: { children: React.ReactNode; roles?: UserRole[] }) {
   const user = useAuthStore((s) => s.user)
@@ -107,7 +93,17 @@ export function Router() {
               </RequireAuth>
             }
           >
-            <Route path="/dashboard" element={<DashboardPlaceholder />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route
+              path="/dashboard/executive"
+              element={
+                <RequireAuth roles={[UserRole.DIRECTOR]}>
+                  <div className="p-6 text-muted-foreground text-sm">
+                    Visão Executiva — Etapa 4b
+                  </div>
+                </RequireAuth>
+              }
+            />
             <Route
               path="/admin/users"
               element={

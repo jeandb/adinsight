@@ -32,7 +32,10 @@
       "Bash(py -3 -c \"import playwright; print\\(''playwright ok''\\)\")",
       "Bash(where node:*)",
       "Bash(pnpm --filter api db:migrate)",
-      "Bash(pnpm --filter api db:seed)"
+      "Bash(pnpm --filter api db:seed)",
+      "Bash(find 'C:\\\\Users\\\\jeanb\\\\OneDrive\\\\Projetos\\\\Prof Jaque Mendes CRM\\\\apps\\\\web\\\\src' -name *.tsx -o -name *.ts)",
+      "Bash(pnpm --filter web type-check)",
+      "Bash(pnpm --filter api type-check)"
     ]
   }
 }
