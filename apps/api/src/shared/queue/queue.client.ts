@@ -14,6 +14,10 @@ export const syncCampaignsQueue = redisConnection
   ? new Queue<SyncJobData>('sync-campaigns', { connection: redisConnection })
   : null
 
+export const evaluateAlertsQueue = redisConnection
+  ? new Queue('evaluate-alerts', { connection: redisConnection })
+  : null
+
 export interface SyncJobData {
   platformType: string
   triggeredBy: 'scheduler' | 'manual'

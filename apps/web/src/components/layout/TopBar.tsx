@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LogOut, RefreshCw } from 'lucide-react'
+import { useNavigate, NavLink } from 'react-router-dom'
+import { LogOut, RefreshCw, Bell } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { useWebSocketEvent } from '@/hooks/use-websocket'
 import type { WsEvent } from '@/lib/websocket/websocket.events'
@@ -20,6 +20,7 @@ export function TopBar() {
   const [syncingPlatforms, setSyncingPlatforms] = useState<Set<string>>(new Set())
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null)
   const [lastSyncPlatform, setLastSyncPlatform] = useState<string | null>(null)
+  const [unreadAlerts, setUnreadAlerts] = useState(0)
 
   const handleSyncEvent = useCallback((event: WsEvent) => {
     if (event.type === 'sync:started') {
@@ -44,6 +45,9 @@ export function TopBar() {
   useWebSocketEvent('sync:started', handleSyncEvent)
   useWebSocketEvent('sync:completed', handleSyncEvent)
   useWebSocketEvent('sync:failed', handleSyncEvent)
+  useWebSocketEvent('alert:triggered', useCallback(() => {
+    setUnreadAlerts((n) => n + 1)
+  }, []))
 
   function handleLogout() {
     clearAuth()
@@ -86,6 +90,21 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Alert notification badge */}
+        <NavLink
+          to="/alerts"
+          onClick={() => setUnreadAlerts(0)}
+          className="relative text-muted-foreground hover:text-foreground transition-colors"
+          title="Alertas"
+        >
+          <Bell className="w-4 h-4" />
+          {unreadAlerts > 0 && (
+            <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold leading-none">
+              {unreadAlerts > 9 ? '9+' : unreadAlerts}
+            </span>
+          )}
+        </NavLink>
+
         <span className="text-sm text-muted-foreground">Olá, {user?.name?.split(' ')[0]}</span>
         <button
           onClick={handleLogout}

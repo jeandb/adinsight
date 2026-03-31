@@ -23,6 +23,38 @@ interface SendInviteOptions {
   activateUrl: string
 }
 
+interface SendAlertOptions {
+  to: string[]
+  ruleName: string
+  message: string
+}
+
+export async function sendAlertEmail(opts: SendAlertOptions): Promise<void> {
+  const message = {
+    from: env.SMTP_FROM ?? 'AdInsight <noreply@adinsight.com>',
+    to: opts.to.join(', '),
+    subject: `⚠️ Alerta AdInsight: ${opts.ruleName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2>⚠️ Alerta disparado no AdInsight</h2>
+        <p style="font-size:16px;color:#111">${opts.message}</p>
+        <p style="color:#6b7280;font-size:12px;margin-top:24px">
+          Acesse o AdInsight para ver os detalhes e gerenciar suas regras de alerta.
+        </p>
+      </div>
+    `,
+  }
+
+  const info = await transport.sendMail(message)
+
+  if (!env.SMTP_HOST) {
+    const parsed = JSON.parse((info as unknown as { message: string }).message)
+    console.log('\n📧 [DEV] Email de alerta (SMTP não configurado)')
+    console.log('   Para:', opts.to.join(', '))
+    console.log('   Subject:', parsed.subject, '\n')
+  }
+}
+
 export async function sendInviteEmail(opts: SendInviteOptions): Promise<void> {
   const message = {
     from: env.SMTP_FROM ?? 'AdInsight <noreply@adinsight.com>',

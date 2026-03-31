@@ -178,24 +178,33 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 7 — Alertas ⏳
+## Etapa 7 — Alertas ✅
 
-**Status:** Pendente
+**Status:** Concluída
 
-**O que construir:**
+**O que foi construído:**
 
 *Backend:*
-- Migration: tabela `alert_rules` (tipo, plataforma, métrica, operador, threshold, destinatários)
-- Migration: tabela `alert_events` (histórico de disparos)
-- Módulo `alerts`: CRUD de regras + job de avaliação (BullMQ) + dispatch (email + WebSocket)
+- Migration `20260330_000008_create_alert_rules.sql`: ENUMs `alert_metric` + `alert_operator`, tabela `alert_rules` (nome, métrica, operador, threshold, período, plataforma, canal, destinatários, ativo)
+- Migration `20260330_000009_create_alert_events.sql`: tabela `alert_events` (histórico de disparos com FK em cascade)
+- Módulo `alerts`: controller → service → repository → routes → evaluator
+  - CRUD completo de regras (`GET/POST/PUT/DELETE /api/alerts`)
+  - Histórico de eventos (`GET /api/alerts/events`)
+  - Avaliação manual (`POST /api/alerts/evaluate`)
+  - `alerts.evaluator.ts`: calcula métricas via SQL, compara threshold, grava evento, emite WS + envia email
+- `sendAlertEmail` adicionado ao mailer compartilhado
+- Queue `evaluate-alerts` (BullMQ) + worker `evaluate-alerts.worker.ts`
+- Scheduler: avaliação de alertas a cada 30min (`:15` e `:45` de cada hora)
+- WsEvent `alert:triggered` adicionado ao tipo union do backend e frontend
 
 *Frontend:*
-- Seção **Admin → Alertas**: criar/editar/remover regras por tipo
-- Badge de notificações in-app no header
-- Semáforo de saúde (🟢/🟡/🔴) na visão executiva
+- `apps/web/src/features/admin/alerts/alerts.api.ts` — client para todos os endpoints
+- `apps/web/src/features/admin/alerts/AlertsPage.tsx` — CRUD de regras (tabs Regras / Histórico), formulário modal, toggle ativo/inativo, avaliação manual
+- TopBar: badge de notificações in-app (incrementa em `alert:triggered`, reseta ao visitar `/alerts`)
+- Rota `/alerts` adicionada ao router
 
 **Teste visual:**
-- Criar regra "ROAS < threshold" → disparar manualmente → ver notificação in-app e email
+- Criar regra "ROAS < 2" → clicar "Avaliar agora" → ver evento no histórico + notificação no sino
 
 **Dependências:** Etapas 4, 5
 

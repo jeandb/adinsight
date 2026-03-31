@@ -8,6 +8,7 @@ import { UsersPage } from './features/admin/users/UsersPage'
 import { PlatformsPage } from './features/admin/platforms/PlatformsPage'
 import { ChannelsPage } from './features/admin/channels/ChannelsPage'
 import { ReviewQueuePage } from './features/admin/campaigns/ReviewQueuePage'
+import { AlertsPage } from './features/admin/alerts/AlertsPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
@@ -95,6 +96,7 @@ export function Router() {
             }
           >
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/alerts" element={<AlertsPage />} />
             <Route
               path="/dashboard/executive"
               element={
