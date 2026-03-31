@@ -210,25 +210,35 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 8 — Integração WooCommerce (Faturamento) ⏳
+## Etapa 8 — Integração WooCommerce (Faturamento) ✅
 
-**Status:** Pendente
+**Status:** Concluída
 
-**O que construir:**
+**O que foi construído:**
 
 *Backend:*
-- Migration: `woo_stores`, `woo_orders`, `woo_subscriptions`
-- Adapters: `woocommerce/loja-das-profs/`, `woocommerce/clube-das-profs/`, `woocommerce/tudo-de-prof/`
-- Jobs BullMQ `sync-woocommerce` (a cada 6h)
-- Cálculo de ROAS real: receita WooCommerce / gasto de campanhas por canal
+- Migration `20260330_000010_create_woo_stores.sql`: ENUM `woo_store_type` + `woo_store_status`, tabela `woo_stores` (3 lojas pré-inseridas: Loja das Profs, Clube das Profs, Tudo de Prof)
+- Migration `20260330_000011_create_woo_orders.sql`: `woo_orders` com ENUM `woo_order_status`
+- Migration `20260330_000012_create_woo_subscriptions.sql`: `woo_subscriptions` (YITH — Clube das Profs)
+- `apps/api/src/modules/woocommerce/`:
+  - `woo.adapter.ts` — cliente WooCommerce REST API v3 com paginação automática + `testConnection`, `syncOrders`, `syncSubscriptions` (YITH)
+  - `woo-stores.repository.ts` — CRUD de lojas, upsert de pedidos e assinaturas, listagem com filtros
+  - `woo-stores.service.ts` — CRUD com AES-256 nas credenciais, sync por loja, test connection
+  - `woo-stores.controller.ts` + `woo-stores.routes.ts` — endpoints REST
+  - `revenue.repository.ts` — KPIs, timeseries, by-store, ROAS real (JOIN woo_orders × metric_snapshots por canal)
+  - `revenue.controller.ts` + `revenue.routes.ts` — `/api/revenue/*`
+- Queue `sync-woocommerce` (BullMQ) + worker + scheduler a cada 6h
+- Rotas: `GET/PATCH/DELETE /api/woo-stores`, `POST /api/woo-stores/:type/test-connection|sync`
+- Rotas: `GET /api/revenue/kpis|timeseries|by-store|roas-real`
 
 *Frontend:*
-- Seção **Admin → Lojas & Faturamento**: cadastro com Consumer Key/Secret + teste de conexão
-- Aba **Faturamento** no dashboard: KPIs de receita, gráfico temporal por loja, donut de distribuição, tabela de pedidos
-- ROAS real vs ROAS atribuído (quando WooCommerce sincronizado)
+- `apps/web/src/features/admin/woo-stores/WooStoresPage.tsx` — cards por loja, modal de credenciais, teste, sync manual, remoção
+- `apps/web/src/features/revenue/RevenuePage.tsx` — seletor de período, KPI cards, gráfico de linha multi-série por loja, barras horizontais por loja, tabela ROAS real por canal, tabela paginada de pedidos
+- Sidebar: ítens "Faturamento" (`/revenue`) e "Lojas & Fatur." (`/admin/woo-stores`)
 
 **Teste visual:**
-- Configurar loja WooCommerce → ver receita real → cruzamento com campanhas gerando ROAS real
+- Configurar Consumer Key/Secret → Testar conexão → Sincronizar → ver pedidos na tabela
+- ROAS Real aparece quando store.channel_id vinculado a um canal com campanhas
 
 **Dependências:** Etapas 2, 4
 

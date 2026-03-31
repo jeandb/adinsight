@@ -1,17 +1,19 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Users, Bell, BarChart3, Plug, Layers, ClipboardList } from 'lucide-react'
+import { LayoutDashboard, Users, Bell, BarChart3, Plug, Layers, ClipboardList, ShoppingBag, DollarSign } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
 import { UserRole } from '@adinsight/shared-types'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/reports', icon: BarChart3, label: 'Relatórios' },
-  { to: '/alerts', icon: Bell, label: 'Alertas' },
-  { to: '/admin/users', icon: Users, label: 'Usuários', roles: [UserRole.ADMIN] },
-  { to: '/admin/platforms', icon: Plug, label: 'Integrações', roles: [UserRole.ADMIN] },
-  { to: '/admin/channels', icon: Layers, label: 'Canais', roles: [UserRole.ADMIN, UserRole.TRAFFIC_MANAGER] },
-  { to: '/admin/campaigns', icon: ClipboardList, label: 'Fila de revisão', roles: [UserRole.ADMIN, UserRole.TRAFFIC_MANAGER] },
+  { to: '/revenue',   icon: DollarSign,      label: 'Faturamento' },
+  { to: '/reports',   icon: BarChart3,        label: 'Relatórios' },
+  { to: '/alerts',    icon: Bell,             label: 'Alertas' },
+  { to: '/admin/users',       icon: Users,        label: 'Usuários',        roles: [UserRole.ADMIN] },
+  { to: '/admin/platforms',   icon: Plug,         label: 'Integrações',     roles: [UserRole.ADMIN] },
+  { to: '/admin/woo-stores',  icon: ShoppingBag,  label: 'Lojas & Fatur.',  roles: [UserRole.ADMIN] },
+  { to: '/admin/channels',    icon: Layers,       label: 'Canais',          roles: [UserRole.ADMIN, UserRole.TRAFFIC_MANAGER] },
+  { to: '/admin/campaigns',   icon: ClipboardList, label: 'Fila de revisão', roles: [UserRole.ADMIN, UserRole.TRAFFIC_MANAGER] },
 ]
 
 export function Sidebar() {

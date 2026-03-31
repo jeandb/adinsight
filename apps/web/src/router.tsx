@@ -9,6 +9,8 @@ import { PlatformsPage } from './features/admin/platforms/PlatformsPage'
 import { ChannelsPage } from './features/admin/channels/ChannelsPage'
 import { ReviewQueuePage } from './features/admin/campaigns/ReviewQueuePage'
 import { AlertsPage } from './features/admin/alerts/AlertsPage'
+import { WooStoresPage } from './features/admin/woo-stores/WooStoresPage'
+import { RevenuePage } from './features/revenue/RevenuePage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
@@ -96,7 +98,8 @@ export function Router() {
             }
           >
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/alerts" element={<AlertsPage />} />
+            <Route path="/revenue"   element={<RevenuePage />} />
+            <Route path="/alerts"    element={<AlertsPage />} />
             <Route
               path="/dashboard/executive"
               element={
@@ -136,6 +139,14 @@ export function Router() {
               element={
                 <RequireAuth roles={[UserRole.ADMIN, UserRole.TRAFFIC_MANAGER]}>
                   <ReviewQueuePage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/woo-stores"
+              element={
+                <RequireAuth roles={[UserRole.ADMIN]}>
+                  <WooStoresPage />
                 </RequireAuth>
               }
             />

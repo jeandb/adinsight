@@ -18,6 +18,16 @@ export const evaluateAlertsQueue = redisConnection
   ? new Queue('evaluate-alerts', { connection: redisConnection })
   : null
 
+export const syncWooQueue = redisConnection
+  ? new Queue<SyncWooJobData>('sync-woocommerce', { connection: redisConnection })
+  : null
+
+export interface SyncWooJobData {
+  storeType?: string
+  triggeredBy: 'scheduler' | 'manual'
+  daysBack?: number
+}
+
 export interface SyncJobData {
   platformType: string
   triggeredBy: 'scheduler' | 'manual'
