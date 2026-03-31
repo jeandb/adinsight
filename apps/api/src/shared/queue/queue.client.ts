@@ -23,7 +23,7 @@ export const syncWooQueue = redisConnection
   : null
 
 export interface SyncWooJobData {
-  storeType?: string
+  storeId?: string
   triggeredBy: 'scheduler' | 'manual'
   daysBack?: number
 }

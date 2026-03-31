@@ -2,11 +2,10 @@ import { db } from '../../shared/database/client'
 import type {
   WooStoreRow,
   WooOrderRow,
-  WooSubscriptionRow,
-  WooStoreType,
   WooStoreStatus,
   WooOrderData,
   WooSubscriptionData,
+  CreateStoreInput,
 } from './woo-stores.types'
 
 export const wooStoresRepository = {
@@ -14,21 +13,52 @@ export const wooStoresRepository = {
 
   async findAll(): Promise<WooStoreRow[]> {
     const { rows } = await db.query<WooStoreRow>(
-      `SELECT * FROM woo_stores ORDER BY type ASC`,
+      `SELECT * FROM woo_stores ORDER BY is_deletable ASC, created_at ASC`,
     )
     return rows
   },
 
-  async findByType(type: WooStoreType): Promise<WooStoreRow | null> {
+  async findById(id: string): Promise<WooStoreRow | null> {
     const { rows } = await db.query<WooStoreRow>(
-      `SELECT * FROM woo_stores WHERE type = $1::woo_store_type`,
-      [type],
+      `SELECT * FROM woo_stores WHERE id = $1`,
+      [id],
     )
     return rows[0] ?? null
   },
 
+  async findAllActive(): Promise<WooStoreRow[]> {
+    const { rows } = await db.query<WooStoreRow>(
+      `SELECT * FROM woo_stores WHERE status = 'ACTIVE' AND consumer_key_encrypted IS NOT NULL`,
+    )
+    return rows
+  },
+
+  async createStore(input: CreateStoreInput): Promise<WooStoreRow> {
+    const { rows } = await db.query<WooStoreRow>(
+      `INSERT INTO woo_stores (name, url, type, source_type, channel_id)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [
+        input.name,
+        input.url ?? null,
+        input.name.toUpperCase().replace(/\s+/g, '_'),  // auto-generate type slug
+        input.sourceType,
+        input.channelId ?? null,
+      ],
+    )
+    return rows[0]
+  },
+
+  async deleteStore(id: string): Promise<boolean> {
+    const { rowCount } = await db.query(
+      `DELETE FROM woo_stores WHERE id = $1 AND is_deletable = TRUE`,
+      [id],
+    )
+    return (rowCount ?? 0) > 0
+  },
+
   async saveCredentials(
-    type: WooStoreType,
+    id: string,
     consumerKeyEncrypted: string,
     consumerSecretEncrypted: string,
     channelId: string | null,
@@ -40,29 +70,25 @@ export const wooStoresRepository = {
            channel_id = COALESCE($3::uuid, channel_id),
            status     = 'NOT_CONFIGURED',
            last_error = NULL
-       WHERE type = $4::woo_store_type
+       WHERE id = $4
        RETURNING *`,
-      [consumerKeyEncrypted, consumerSecretEncrypted, channelId, type],
+      [consumerKeyEncrypted, consumerSecretEncrypted, channelId, id],
     )
     return rows[0]
   },
 
-  async updateStatus(
-    type: WooStoreType,
-    status: WooStoreStatus,
-    lastError?: string,
-  ): Promise<void> {
+  async updateStatus(id: string, status: WooStoreStatus, lastError?: string): Promise<void> {
     await db.query(
       `UPDATE woo_stores
        SET status       = $1::woo_store_status,
            last_error   = $2,
            last_sync_at = CASE WHEN $1::text = 'ACTIVE' THEN NOW() ELSE last_sync_at END
-       WHERE type = $3::woo_store_type`,
-      [status, lastError ?? null, type],
+       WHERE id = $3`,
+      [status, lastError ?? null, id],
     )
   },
 
-  async clearCredentials(type: WooStoreType): Promise<WooStoreRow> {
+  async clearCredentials(id: string): Promise<WooStoreRow> {
     const { rows } = await db.query<WooStoreRow>(
       `UPDATE woo_stores
        SET consumer_key_encrypted    = NULL,
@@ -70,9 +96,9 @@ export const wooStoresRepository = {
            status     = 'NOT_CONFIGURED',
            last_error = NULL,
            last_sync_at = NULL
-       WHERE type = $1::woo_store_type
+       WHERE id = $1
        RETURNING *`,
-      [type],
+      [id],
     )
     return rows[0]
   },
@@ -93,15 +119,7 @@ export const wooStoresRepository = {
            total_cents    = EXCLUDED.total_cents,
            paid_at        = EXCLUDED.paid_at,
            order_date     = EXCLUDED.order_date`,
-        [
-          storeId,
-          o.externalId,
-          o.status,
-          o.customerEmail,
-          o.totalCents,
-          o.paidAt,
-          o.orderDate,
-        ],
+        [storeId, o.externalId, o.status, o.customerEmail, o.totalCents, o.paidAt, o.orderDate],
       )
     }
   },
@@ -123,7 +141,7 @@ export const wooStoresRepository = {
     if (params.before)  { conditions.push(`o.order_date <= $${i++}`); values.push(params.before) }
     if (params.status)  { conditions.push(`o.status = $${i++}::woo_order_status`); values.push(params.status) }
 
-    const where = conditions.join(' AND ')
+    const where  = conditions.join(' AND ')
     const offset = (params.page - 1) * params.limit
 
     const [dataRes, countRes] = await Promise.all([
@@ -165,20 +183,9 @@ export const wooStoresRepository = {
            start_date        = EXCLUDED.start_date,
            end_date          = EXCLUDED.end_date,
            next_payment_date = EXCLUDED.next_payment_date`,
-        [
-          storeId, s.externalId, s.customerEmail, s.status, s.planName,
-          s.totalCents, s.billingPeriod, s.startDate, s.endDate, s.nextPaymentDate,
-        ],
+        [storeId, s.externalId, s.customerEmail, s.status, s.planName,
+         s.totalCents, s.billingPeriod, s.startDate, s.endDate, s.nextPaymentDate],
       )
     }
-  },
-
-  async countActiveSubscriptions(storeId: string): Promise<number> {
-    const { rows } = await db.query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM woo_subscriptions
-       WHERE store_id = $1 AND status = 'active'`,
-      [storeId],
-    )
-    return parseInt(rows[0].count, 10)
   },
 }

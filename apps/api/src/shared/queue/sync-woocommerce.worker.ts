@@ -3,10 +3,9 @@ import { redisConnection } from './queue.client'
 import { wooStoresService } from '../../modules/woocommerce/woo-stores.service'
 import { wooStoresRepository } from '../../modules/woocommerce/woo-stores.repository'
 import { broadcast } from '../websocket/websocket.server'
-import type { WooStoreType } from '../../modules/woocommerce/woo-stores.types'
 
 export interface SyncWooJobData {
-  storeType?: WooStoreType  // undefined = sync all active stores
+  storeId?: string          // undefined = sync all active stores
   triggeredBy: 'scheduler' | 'manual'
   daysBack?: number
 }
@@ -17,19 +16,19 @@ export function startSyncWooWorker(): void {
   const worker = new Worker<SyncWooJobData>(
     'sync-woocommerce',
     async (job) => {
-      const { storeType, daysBack = 30 } = job.data
+      const { storeId, daysBack = 30 } = job.data
 
-      const stores = await wooStoresRepository.findAll()
-      const targets = storeType
-        ? stores.filter((s) => s.type === storeType && s.consumer_key_encrypted)
-        : stores.filter((s) => s.status === 'ACTIVE' && s.consumer_key_encrypted)
+      const stores = storeId
+        ? (await wooStoresRepository.findById(storeId) ? [await wooStoresRepository.findById(storeId)!] : [])
+        : await wooStoresRepository.findAllActive()
 
       let totalOrders = 0
 
-      for (const store of targets) {
+      for (const store of stores) {
+        if (!store) continue
         try {
           console.log(`[woo-worker] Sincronizando ${store.name}...`)
-          const result = await wooStoresService.syncStore(store.type, daysBack)
+          const result = await wooStoresService.syncStore(store.id, daysBack)
           totalOrders += result.ordersSynced
           console.log(
             `[woo-worker] ${store.name} — ${result.ordersSynced} pedidos, ` +

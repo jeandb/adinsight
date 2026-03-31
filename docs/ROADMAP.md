@@ -217,28 +217,31 @@ Cada etapa termina com um entregável visual testável.
 **O que foi construído:**
 
 *Backend:*
-- Migration `20260330_000010_create_woo_stores.sql`: ENUM `woo_store_type` + `woo_store_status`, tabela `woo_stores` (3 lojas pré-inseridas: Loja das Profs, Clube das Profs, Tudo de Prof)
+- Migration `20260330_000010_create_woo_stores.sql`: `woo_store_status`, tabela `woo_stores` (3 lojas pré-inseridas: Loja das Profs, Clube das Profs, Tudo de Prof)
 - Migration `20260330_000011_create_woo_orders.sql`: `woo_orders` com ENUM `woo_order_status`
 - Migration `20260330_000012_create_woo_subscriptions.sql`: `woo_subscriptions` (YITH — Clube das Profs)
+- Migration `20260330_000013_flex_woo_stores.sql`: `type` TEXT (livre), `source_type` (`woocommerce`|`manual`), `is_deletable` — lojas pré-cadastradas protegidas de exclusão
 - `apps/api/src/modules/woocommerce/`:
-  - `woo.adapter.ts` — cliente WooCommerce REST API v3 com paginação automática + `testConnection`, `syncOrders`, `syncSubscriptions` (YITH)
-  - `woo-stores.repository.ts` — CRUD de lojas, upsert de pedidos e assinaturas, listagem com filtros
-  - `woo-stores.service.ts` — CRUD com AES-256 nas credenciais, sync por loja, test connection
-  - `woo-stores.controller.ts` + `woo-stores.routes.ts` — endpoints REST
+  - `woo.adapter.ts` — cliente WooCommerce REST API v3 com Basic Auth (evita Cloudflare WAF), paginação automática, `testConnection`, `syncOrders`, `syncSubscriptions`
+  - `revenue.importer.ts` — parser de Excel/CSV: aliases de colunas pt/en, formato BRL, datas BR, serial Excel
+  - `woo-stores.repository.ts` — CRUD por UUID, upsert de pedidos/assinaturas, `findAllActive` para worker
+  - `woo-stores.service.ts` — CRUD com AES-256 nas credenciais, sync por id, importação de arquivo
+  - `woo-stores.controller.ts` + `woo-stores.routes.ts` — REST com multer para upload de arquivo
   - `revenue.repository.ts` — KPIs, timeseries, by-store, ROAS real (JOIN woo_orders × metric_snapshots por canal)
   - `revenue.controller.ts` + `revenue.routes.ts` — `/api/revenue/*`
 - Queue `sync-woocommerce` (BullMQ) + worker + scheduler a cada 6h
-- Rotas: `GET/PATCH/DELETE /api/woo-stores`, `POST /api/woo-stores/:type/test-connection|sync`
+- Rotas: `POST /api/woo-stores`, `DELETE /api/woo-stores/:id`, `PATCH /api/woo-stores/:id/credentials`, `POST /api/woo-stores/:id/test-connection|sync|import`, `GET /api/woo-stores/template`
 - Rotas: `GET /api/revenue/kpis|timeseries|by-store|roas-real`
 
 *Frontend:*
-- `apps/web/src/features/admin/woo-stores/WooStoresPage.tsx` — cards por loja, modal de credenciais, teste, sync manual, remoção
+- `apps/web/src/features/admin/woo-stores/WooStoresPage.tsx` — botão "Nova loja" (modal com nome, tipo de integração), cards adaptáveis por `sourceType`: WooCommerce (credenciais, teste, sync) ou Manual (drag-drop upload, download de modelo), exclusão de lojas criadas pelo usuário
 - `apps/web/src/features/revenue/RevenuePage.tsx` — seletor de período, KPI cards, gráfico de linha multi-série por loja, barras horizontais por loja, tabela ROAS real por canal, tabela paginada de pedidos
 - Sidebar: ítens "Faturamento" (`/revenue`) e "Lojas & Fatur." (`/admin/woo-stores`)
 
 **Teste visual:**
-- Configurar Consumer Key/Secret → Testar conexão → Sincronizar → ver pedidos na tabela
-- ROAS Real aparece quando store.channel_id vinculado a um canal com campanhas
+- Criar nova loja Manual → importar planilha Excel → ver pedidos na tabela de faturamento
+- Criar loja WooCommerce → configurar credenciais → Testar conexão → Sincronizar → ver pedidos
+- ROAS Real aparece quando `store.channel_id` vinculado a um canal com campanhas
 
 **Dependências:** Etapas 2, 4
 

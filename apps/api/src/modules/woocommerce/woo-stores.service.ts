@@ -2,22 +2,25 @@ import { AppError } from '../../shared/middleware/error.middleware'
 import { encrypt, decrypt, mask } from '../../shared/crypto'
 import { wooStoresRepository } from './woo-stores.repository'
 import { testWooConnection, syncOrders, syncSubscriptions } from './woo.adapter'
-import type { WooStoreRow, WooStoreType, SaveCredentialsInput } from './woo-stores.types'
+import { parseFileToOrders } from './revenue.importer'
+import type { WooStoreRow, CreateStoreInput, SaveCredentialsInput } from './woo-stores.types'
 
 function sanitizeStore(row: WooStoreRow) {
   return {
-    id:          row.id,
-    name:        row.name,
-    url:         row.url,
-    type:        row.type,
-    channelId:   row.channel_id,
-    status:      row.status,
-    lastError:   row.last_error,
-    lastSyncAt:  row.last_sync_at,
-    hasCredentials: !!(row.consumer_key_encrypted && row.consumer_secret_encrypted),
+    id:                row.id,
+    name:              row.name,
+    url:               row.url,
+    type:              row.type,
+    sourceType:        row.source_type,
+    isDeletable:       row.is_deletable,
+    channelId:         row.channel_id,
+    status:            row.status,
+    lastError:         row.last_error,
+    lastSyncAt:        row.last_sync_at,
+    hasCredentials:    !!(row.consumer_key_encrypted && row.consumer_secret_encrypted),
     consumerKeyMasked: row.consumer_key_encrypted ? mask(row.consumer_key_encrypted) : null,
-    createdAt:   row.created_at,
-    updatedAt:   row.updated_at,
+    createdAt:         row.created_at,
+    updatedAt:         row.updated_at,
   }
 }
 
@@ -27,51 +30,56 @@ export const wooStoresService = {
     return rows.map(sanitizeStore)
   },
 
-  async saveCredentials(type: WooStoreType, input: SaveCredentialsInput) {
-    const consumerKeyEncrypted    = encrypt(input.consumerKey)
-    const consumerSecretEncrypted = encrypt(input.consumerSecret)
-    const row = await wooStoresRepository.saveCredentials(
-      type,
-      consumerKeyEncrypted,
-      consumerSecretEncrypted,
-      input.channelId ?? null,
-    )
+  async createStore(input: CreateStoreInput) {
+    const row = await wooStoresRepository.createStore(input)
     return sanitizeStore(row)
   },
 
-  async testConnection(type: WooStoreType) {
-    const store = await wooStoresRepository.findByType(type)
+  async deleteStore(id: string) {
+    const deleted = await wooStoresRepository.deleteStore(id)
+    if (!deleted) throw new AppError(403, 'FORBIDDEN', 'Esta loja não pode ser excluída')
+  },
+
+  async saveCredentials(id: string, input: SaveCredentialsInput) {
+    const store = await wooStoresRepository.findById(id)
+    if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+
+    const ckEnc = encrypt(input.consumerKey)
+    const csEnc = encrypt(input.consumerSecret)
+    const row   = await wooStoresRepository.saveCredentials(id, ckEnc, csEnc, input.channelId ?? null)
+    return sanitizeStore(row)
+  },
+
+  async testConnection(id: string) {
+    const store = await wooStoresRepository.findById(id)
     if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
     if (!store.consumer_key_encrypted || !store.consumer_secret_encrypted) {
       throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais não configuradas')
     }
 
     const creds = {
-      url:            store.url,
+      url:            store.url!,
       consumerKey:    decrypt(store.consumer_key_encrypted),
       consumerSecret: decrypt(store.consumer_secret_encrypted),
     }
 
     const result = await testWooConnection(creds)
-
-    if (result.ok) {
-      await wooStoresRepository.updateStatus(type, 'ACTIVE')
-    } else {
-      await wooStoresRepository.updateStatus(type, 'ERROR', result.error)
-    }
-
+    await wooStoresRepository.updateStatus(id, result.ok ? 'ACTIVE' : 'ERROR', result.error)
     return result
   },
 
-  async syncStore(type: WooStoreType, daysBack = 30) {
-    const store = await wooStoresRepository.findByType(type)
+  async syncStore(id: string, daysBack = 30) {
+    const store = await wooStoresRepository.findById(id)
     if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+    if (store.source_type !== 'woocommerce') {
+      throw new AppError(422, 'INVALID_SOURCE', 'Lojas manuais não suportam sync via API')
+    }
     if (!store.consumer_key_encrypted || !store.consumer_secret_encrypted) {
       throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais não configuradas')
     }
 
     const creds = {
-      url:            store.url,
+      url:            store.url!,
       consumerKey:    decrypt(store.consumer_key_encrypted),
       consumerSecret: decrypt(store.consumer_secret_encrypted),
     }
@@ -83,37 +91,42 @@ export const wooStoresService = {
     await wooStoresRepository.upsertOrders(store.id, orders)
 
     let subscriptionsSynced = 0
-    if (type === 'CLUBE_DAS_PROFS') {
+    if (store.type === 'CLUBE_DAS_PROFS') {
       const subs = await syncSubscriptions(creds)
       await wooStoresRepository.upsertSubscriptions(store.id, subs)
       subscriptionsSynced = subs.length
     }
 
-    await wooStoresRepository.updateStatus(type, 'ACTIVE')
-
+    await wooStoresRepository.updateStatus(id, 'ACTIVE')
     return { ordersSynced: orders.length, subscriptionsSynced }
   },
 
-  async clearCredentials(type: WooStoreType) {
-    const row = await wooStoresRepository.clearCredentials(type)
+  async importFromFile(id: string, buffer: Buffer, filename: string) {
+    const store = await wooStoresRepository.findById(id)
+    if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+
+    const orders = parseFileToOrders(buffer, filename)
+    if (orders.length === 0) throw new AppError(422, 'EMPTY_FILE', 'Nenhum pedido encontrado no arquivo')
+
+    await wooStoresRepository.upsertOrders(store.id, orders)
+    await wooStoresRepository.updateStatus(id, 'ACTIVE')
+
+    return { imported: orders.length }
+  },
+
+  async clearCredentials(id: string) {
+    const row = await wooStoresRepository.clearCredentials(id)
     return sanitizeStore(row)
   },
 
   async listOrders(params: {
-    storeType?: string
+    storeId?: string
     after?: string
     before?: string
     status?: string
     page: number
     limit: number
   }) {
-    let storeId: string | undefined
-
-    if (params.storeType) {
-      const store = await wooStoresRepository.findByType(params.storeType as WooStoreType)
-      if (store) storeId = store.id
-    }
-
-    return wooStoresRepository.findOrders({ ...params, storeId })
+    return wooStoresRepository.findOrders(params)
   },
 }

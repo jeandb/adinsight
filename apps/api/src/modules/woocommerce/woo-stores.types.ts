@@ -1,13 +1,15 @@
-export type WooStoreType = 'LOJA_DAS_PROFS' | 'CLUBE_DAS_PROFS' | 'TUDO_DE_PROF'
-export type WooStoreStatus = 'NOT_CONFIGURED' | 'ACTIVE' | 'ERROR'
-export type WooOrderStatus = 'pending' | 'processing' | 'on-hold' | 'completed' | 'cancelled' | 'refunded' | 'failed'
+export type WooStoreStatus   = 'NOT_CONFIGURED' | 'ACTIVE' | 'ERROR'
+export type WooSourceType    = 'woocommerce' | 'manual'
+export type WooOrderStatus   = 'pending' | 'processing' | 'on-hold' | 'completed' | 'cancelled' | 'refunded' | 'failed'
 export type WooSubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'on-hold' | 'pending' | 'pending-cancel'
 
 export interface WooStoreRow {
   id: string
   name: string
-  url: string
-  type: WooStoreType
+  url: string | null
+  type: string           // free-form text now (previously ENUM)
+  source_type: WooSourceType
+  is_deletable: boolean
   channel_id: string | null
   consumer_key_encrypted: string | null
   consumer_secret_encrypted: string | null
@@ -47,6 +49,13 @@ export interface WooSubscriptionRow {
   updated_at: Date
 }
 
+export interface CreateStoreInput {
+  name: string
+  url?: string | null
+  sourceType: WooSourceType
+  channelId?: string | null
+}
+
 export interface SaveCredentialsInput {
   consumerKey: string
   consumerSecret: string
@@ -80,10 +89,4 @@ export interface WooSubscriptionData {
   startDate: string | null
   endDate: string | null
   nextPaymentDate: string | null
-}
-
-export const WOO_STORE_LABELS: Record<WooStoreType, string> = {
-  LOJA_DAS_PROFS:  'Loja das Profs',
-  CLUBE_DAS_PROFS: 'Clube das Profs',
-  TUDO_DE_PROF:    'Tudo de Prof',
 }
