@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { wooStoresApi, type WooStore, type WooSourceType } from './woo-stores.api'
 
+
 // ─── Status config ────────────────────────────────────────────────────────────
 
 const STATUS_CONFIG = {
@@ -355,14 +356,20 @@ function FileImportZone({ store }: { store: WooStore }) {
     importMut.mutate(file)
   }
 
-  async function handleDownloadTemplate() {
-    const blob = await wooStoresApi.downloadTemplate()
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement('a')
+  function handleDownloadTemplate() {
+    const csv = [
+      'data,valor,email,status,id_pedido',
+      '15/01/2024,97.00,cliente@email.com,completed,1001',
+      '16/01/2024,"R$ 197,00",outro@email.com,completed,1002',
+      '17/01/2024,47.00,,completed,1003',
+    ].join('\n')
+    const url = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv)
+    const a   = document.createElement('a')
     a.href     = url
     a.download = 'modelo-importacao-faturamento.csv'
+    document.body.appendChild(a)
     a.click()
-    URL.revokeObjectURL(url)
+    document.body.removeChild(a)
   }
 
   return (
