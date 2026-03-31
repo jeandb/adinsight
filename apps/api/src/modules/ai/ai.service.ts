@@ -62,12 +62,22 @@ export const aiService = {
   },
 
   async listScenarios() {
-    return aiRepository.listScenarios()
+    const rows = await aiRepository.listScenarios()
+    return rows.map((r) => ({
+      scenario: r.scenario,
+      providerId: r.provider_id,
+      providerName: r.provider_name,
+    }))
   },
 
   async assignScenario(scenario: string, providerId: string | null) {
     await aiRepository.assignScenario(scenario, providerId)
-    return aiRepository.listScenarios()
+    const rows = await aiRepository.listScenarios()
+    return rows.map((r) => ({
+      scenario: r.scenario,
+      providerId: r.provider_id,
+      providerName: r.provider_name,
+    }))
   },
 
   async chat(userId: string, message: string, history: AiMessage[] = []) {
