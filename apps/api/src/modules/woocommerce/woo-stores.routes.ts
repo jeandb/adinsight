@@ -21,7 +21,10 @@ router.get('/template', wooStoresController.downloadTemplate)
 // POST /api/woo-stores              — create new store (admin only)
 router.post('/', requireRole(UserRole.ADMIN), wooStoresController.createStore)
 
-// DELETE /api/woo-stores/:id        — delete store (admin only, is_deletable check in service)
+// PATCH /api/woo-stores/:id         — update store metadata (name, url, sourceType)
+router.patch('/:id', requireRole(UserRole.ADMIN), wooStoresController.updateStore)
+
+// DELETE /api/woo-stores/:id        — delete store (admin only)
 router.delete('/:id', requireRole(UserRole.ADMIN), wooStoresController.deleteStore)
 
 // PATCH /api/woo-stores/:id/credentials  — save/update credentials (admin only)

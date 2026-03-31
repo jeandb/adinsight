@@ -35,9 +35,17 @@ export const wooStoresService = {
     return sanitizeStore(row)
   },
 
+  async updateStore(id: string, input: { name?: string; url?: string | null; sourceType?: import('./woo-stores.types').WooSourceType }) {
+    const store = await wooStoresRepository.findById(id)
+    if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+    const row = await wooStoresRepository.updateStore(id, input)
+    return sanitizeStore(row)
+  },
+
   async deleteStore(id: string) {
-    const deleted = await wooStoresRepository.deleteStore(id)
-    if (!deleted) throw new AppError(403, 'FORBIDDEN', 'Esta loja não pode ser excluída')
+    const store = await wooStoresRepository.findById(id)
+    if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+    await wooStoresRepository.deleteStore(id)
   },
 
   async saveCredentials(id: string, input: SaveCredentialsInput) {

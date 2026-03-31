@@ -24,6 +24,18 @@ export const wooStoresController = {
     } catch (err) { next(err) }
   },
 
+  async updateStore(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id = z.string().uuid().parse(req.params.id)
+      const input = z.object({
+        name:       z.string().min(1).max(120).optional(),
+        url:        z.string().url().nullable().optional(),
+        sourceType: z.enum(['woocommerce', 'manual']).optional(),
+      }).parse(req.body)
+      res.json({ success: true, data: await wooStoresService.updateStore(id, input) })
+    } catch (err) { next(err) }
+  },
+
   async deleteStore(req: Request, res: Response, next: NextFunction) {
     try {
       const id = z.string().uuid().parse(req.params.id)

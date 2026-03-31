@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ShoppingBag, CheckCircle2, AlertCircle, Settings, RefreshCw,
-  Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff,
+  Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff, Pencil,
 } from 'lucide-react'
 import { wooStoresApi, type WooStore, type WooSourceType } from './woo-stores.api'
 
@@ -128,6 +128,116 @@ function CreateStoreModal({ onClose }: { onClose: () => void }) {
               className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
               {create.isPending ? 'Criando...' : 'Criar loja'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ─── Edit Store Modal ─────────────────────────────────────────────────────────
+
+function EditStoreModal({ store, onClose }: { store: WooStore; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [name,       setName]       = useState(store.name)
+  const [url,        setUrl]        = useState(store.url ?? '')
+  const [sourceType, setSourceType] = useState<WooSourceType>(store.sourceType)
+
+  const update = useMutation({
+    mutationFn: () => wooStoresApi.updateStore(store.id, {
+      name,
+      url: url.trim() || null,
+      sourceType,
+    }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['woo-stores'] })
+      onClose()
+    },
+  })
+
+  const inputCls = 'w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring'
+  const labelCls = 'block text-xs font-medium text-muted-foreground mb-1'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Editar loja — {store.name}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); update.mutate() }}
+          className="p-5 space-y-4"
+        >
+          <div>
+            <label className={labelCls}>Nome</label>
+            <input
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>Tipo de integração</label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { value: 'woocommerce', label: 'WooCommerce API', icon: Wifi,    desc: 'Sync automático via REST API' },
+                { value: 'manual',      label: 'Importação manual', icon: Upload, desc: 'Upload de arquivo Excel/CSV' },
+              ] as const).map(({ value, label, icon: Icon, desc }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSourceType(value)}
+                  className={`flex flex-col items-start gap-1.5 p-3 rounded-lg border text-left transition-colors ${
+                    sourceType === value
+                      ? 'border-primary bg-primary/5 text-foreground'
+                      : 'border-border text-muted-foreground hover:bg-accent'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-xs font-semibold">{label}</span>
+                  <span className="text-xs">{desc}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {sourceType === 'woocommerce' && (
+            <div>
+              <label className={labelCls}>URL da loja (opcional)</label>
+              <input
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://minhaloja.com.br"
+                className={inputCls}
+              />
+            </div>
+          )}
+
+          {update.isError && (
+            <p className="text-xs text-destructive">{(update.error as Error).message}</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-accent transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={update.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {update.isPending ? 'Salvando...' : 'Salvar'}
             </button>
           </div>
         </form>
@@ -319,6 +429,7 @@ function FileImportZone({ store }: { store: WooStore }) {
 function StoreCard({ store }: { store: WooStore }) {
   const qc = useQueryClient()
   const [showCredentials, setShowCredentials] = useState(false)
+  const [showEdit,        setShowEdit]        = useState(false)
   const statusCfg = STATUS_CONFIG[store.status]
   const StatusIcon = statusCfg.icon
 
@@ -374,6 +485,14 @@ function StoreCard({ store }: { store: WooStore }) {
             }`}>
               {isWoo ? 'API' : 'Manual'}
             </span>
+            {/* Edit button */}
+            <button
+              onClick={() => setShowEdit(true)}
+              title="Editar loja"
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
 
@@ -444,26 +563,28 @@ function StoreCard({ store }: { store: WooStore }) {
           )}
         </div>
 
-        {/* Delete store (only for deletable stores) */}
-        {store.isDeletable && (
-          <div className="pt-2 border-t border-border">
-            <button
-              onClick={() => {
-                if (confirm(`Excluir a loja "${store.name}"? Esta ação não pode ser desfeita.`))
-                  deleteStore.mutate()
-              }}
-              disabled={deleteStore.isPending}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {deleteStore.isPending ? 'Excluindo...' : 'Excluir loja'}
-            </button>
-          </div>
-        )}
+        {/* Delete store */}
+        <div className="pt-2 border-t border-border">
+          <button
+            onClick={() => {
+              if (confirm(`Excluir a loja "${store.name}"? Esta ação não pode ser desfeita.`))
+                deleteStore.mutate()
+            }}
+            disabled={deleteStore.isPending}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            {deleteStore.isPending ? 'Excluindo...' : 'Excluir loja'}
+          </button>
+        </div>
       </div>
 
       {showCredentials && (
         <CredentialsModal store={store} onClose={() => setShowCredentials(false)} />
+      )}
+
+      {showEdit && (
+        <EditStoreModal store={store} onClose={() => setShowEdit(false)} />
       )}
     </>
   )

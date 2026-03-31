@@ -47,6 +47,9 @@ export const wooStoresApi = {
   createStore: (input: CreateStoreInput) =>
     apiClient.post<{ data: WooStore }>('/woo-stores', input).then((r) => r.data.data),
 
+  updateStore: (id: string, input: Partial<CreateStoreInput>) =>
+    apiClient.patch<{ data: WooStore }>(`/woo-stores/${id}`, input).then((r) => r.data.data),
+
   deleteStore: (id: string) =>
     apiClient.delete(`/woo-stores/${id}`),
 

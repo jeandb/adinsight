@@ -3,6 +3,7 @@ import type {
   WooStoreRow,
   WooOrderRow,
   WooStoreStatus,
+  WooSourceType,
   WooOrderData,
   WooSubscriptionData,
   CreateStoreInput,
@@ -49,9 +50,30 @@ export const wooStoresRepository = {
     return rows[0]
   },
 
+  async updateStore(
+    id: string,
+    input: { name?: string; url?: string | null; sourceType?: WooSourceType },
+  ): Promise<WooStoreRow> {
+    const { rows } = await db.query<WooStoreRow>(
+      `UPDATE woo_stores
+       SET name        = COALESCE($1, name),
+           url         = CASE WHEN $2::text IS DISTINCT FROM '__UNCHANGED__' THEN $2::text ELSE url END,
+           source_type = COALESCE($3, source_type)
+       WHERE id = $4
+       RETURNING *`,
+      [
+        input.name ?? null,
+        input.url !== undefined ? (input.url ?? null) : '__UNCHANGED__',
+        input.sourceType ?? null,
+        id,
+      ],
+    )
+    return rows[0]
+  },
+
   async deleteStore(id: string): Promise<boolean> {
     const { rowCount } = await db.query(
-      `DELETE FROM woo_stores WHERE id = $1 AND is_deletable = TRUE`,
+      `DELETE FROM woo_stores WHERE id = $1`,
       [id],
     )
     return (rowCount ?? 0) > 0
