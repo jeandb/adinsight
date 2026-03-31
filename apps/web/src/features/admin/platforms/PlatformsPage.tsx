@@ -285,7 +285,7 @@ function PlatformCard({
             </p>
           )}
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               onClick={() => save.mutate()}
               disabled={!allFieldsFilled || save.isPending}
@@ -315,6 +315,30 @@ function PlatformCard({
                     'Testar conexão'
                   )}
                 </button>
+
+                {platform.status === 'CONNECTED' && (
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={syncDaysBack}
+                      onChange={(e) => setSyncDaysBack(Number(e.target.value))}
+                      className="h-9 px-2 rounded-lg border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    >
+                      <option value={7}>7 dias</option>
+                      <option value={30}>30 dias</option>
+                      <option value={60}>60 dias</option>
+                      <option value={90}>90 dias</option>
+                    </select>
+                    <button
+                      onClick={() => sync.mutate()}
+                      disabled={sync.isPending}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-card border border-border text-foreground rounded-lg text-sm font-medium hover:bg-accent transition-colors disabled:opacity-60"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${sync.isPending ? 'animate-spin' : ''}`} />
+                      {sync.isPending ? 'Sincronizando...' : 'Sincronizar'}
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={() => clear.mutate()}
                   disabled={clear.isPending}
