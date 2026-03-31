@@ -45,11 +45,11 @@ export const intentDetector = {
       }
     }
 
-    // Always include campaign-performance-analyst for any substantive query
-    if (detected.size === 0) {
-      detected.add('campaign-performance-analyst')
-    }
-
     return [...detected]
+  },
+
+  hasDataIntent(message: string): boolean {
+    const lower = message.toLowerCase()
+    return Object.values(SKILL_KEYWORDS).some((kws) => kws.some((kw) => lower.includes(kw)))
   },
 }

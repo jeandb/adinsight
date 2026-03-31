@@ -88,14 +88,16 @@ export const aiService = {
 
     const skills = intentDetector.detectSkills(message)
     const systemPrompt = skillComposer.buildSystemPrompt(skills)
-    const context = await contextBuilder.buildContext()
 
-    // Build messages with context injected in the first user message
+    // Only fetch and inject data context when the user asked something data-related
+    const needsContext = intentDetector.hasDataIntent(message)
+    const context = needsContext ? await contextBuilder.buildContext() : null
+
     const allMessages: AiMessage[] = [
       ...history,
       {
         role: 'user',
-        content: history.length === 0
+        content: needsContext && context && history.length === 0
           ? `${context}\n\n---\n\n${message}`
           : message,
       },
