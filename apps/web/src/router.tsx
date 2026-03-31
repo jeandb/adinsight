@@ -10,6 +10,7 @@ import { ChannelsPage } from './features/admin/channels/ChannelsPage'
 import { ReviewQueuePage } from './features/admin/campaigns/ReviewQueuePage'
 import { AlertsPage } from './features/admin/alerts/AlertsPage'
 import { WooStoresPage } from './features/admin/woo-stores/WooStoresPage'
+import { AiProvidersPage } from './features/admin/ai-providers/AiProvidersPage'
 import { RevenuePage } from './features/revenue/RevenuePage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { useAuthStore } from './stores/auth.store'
@@ -147,6 +148,14 @@ export function Router() {
               element={
                 <RequireAuth roles={[UserRole.ADMIN]}>
                   <WooStoresPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/ai-providers"
+              element={
+                <RequireAuth roles={[UserRole.ADMIN]}>
+                  <AiProvidersPage />
                 </RequireAuth>
               }
             />

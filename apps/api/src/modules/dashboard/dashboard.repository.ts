@@ -273,6 +273,7 @@ export const dashboardRepository = {
         AND ($4::uuid IS NULL OR c.channel_id = $4)
         AND ($5::text IS NULL OR c.objective::text = $5)
       GROUP BY c.id, c.name, ap.type, bc.name, bc.color
+      HAVING SUM(COALESCE(ms.impressions, 0)) > 0 OR SUM(COALESCE(ms.spend_cents, 0)) > 0
       ORDER BY ${orderExpr}
       LIMIT $6`,
       [range.from, range.to, platform, channelId, objective, limit],
@@ -336,21 +337,27 @@ export const dashboardRepository = {
         AND ms.snapshot_date BETWEEN $1 AND $2
       ${baseWhere}
       GROUP BY c.id, c.name, ap.type, bc.name, bc.color, c.objective, c.status
+      HAVING SUM(COALESCE(ms.impressions, 0)) > 0 OR SUM(COALESCE(ms.spend_cents, 0)) > 0
       ORDER BY ${orderExpr}
       LIMIT $6 OFFSET $7`,
       [range.from, range.to, platform, channelId, objective, limit, offset, search],
     )
 
     const { rows: countRows } = await db.query<{ total: string }>(
-      `SELECT COUNT(DISTINCT c.id)::text AS total
-      FROM campaigns c
-      JOIN ad_platforms ap ON ap.id = c.platform_id
-      LEFT JOIN business_channels bc ON bc.id = c.channel_id
-      WHERE ($1::text IS NULL OR ap.type::text = $1)
-        AND ($2::uuid IS NULL OR c.channel_id = $2)
-        AND ($3::text IS NULL OR c.objective::text = $3)
-        AND ($4::text IS NULL OR c.name ILIKE '%' || $4 || '%')`,
-      [platform, channelId, objective, search],
+      `SELECT COUNT(*) AS total FROM (
+        SELECT c.id
+        FROM campaigns c
+        JOIN ad_platforms ap ON ap.id = c.platform_id
+        LEFT JOIN metric_snapshots ms ON ms.campaign_id = c.id
+          AND ms.snapshot_date BETWEEN $1 AND $2
+        WHERE ($3::text IS NULL OR ap.type::text = $3)
+          AND ($4::uuid IS NULL OR c.channel_id = $4)
+          AND ($5::text IS NULL OR c.objective::text = $5)
+          AND ($6::text IS NULL OR c.name ILIKE '%' || $6 || '%')
+        GROUP BY c.id
+        HAVING SUM(COALESCE(ms.impressions, 0)) > 0 OR SUM(COALESCE(ms.spend_cents, 0)) > 0
+      ) sub`,
+      [range.from, range.to, platform, channelId, objective, search],
     )
 
     return {

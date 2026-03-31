@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { useWebSocketConnection } from '@/hooks/use-websocket'
+import { AiChatSidebar } from '@/features/ai/chat/AiChatSidebar'
 
 export function AppShell() {
   useWebSocketConnection()
@@ -15,6 +16,7 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+      <AiChatSidebar />
     </div>
   )
 }

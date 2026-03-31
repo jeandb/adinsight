@@ -247,29 +247,34 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 9 — Módulo de IA ⏳
+## Etapa 9 — Módulo de IA ✅
 
-**Status:** Pendente
+**Status:** Concluída
 
-**O que construir:**
+**O que foi construído:**
 
 *Backend:*
-- Migration: `ai_providers`, `ai_scenario_assignments`, `ai_history`
-- `src/modules/ai/llm-adapter/` — abstração de provider (Anthropic, OpenAI, Gemini)
-- `src/modules/ai/skill-composer/` — monta prompt combinando skills `.md`
-- `src/modules/ai/intent-detector/` — detecta skills a ativar por requisição
-- Skills em `src/modules/ai/skills/`: `business-context`, `campaign-performance-analyst`, `period-comparator`, `budget-optimizer`, `creative-analyzer`, `copy-reviewer`, `report-generator`, `cross-data-analyst`
-- Job `ai-analysis` (BullMQ) para análise automática diária (padrão: 07h00)
-- Endpoints: chat, análise sob demanda, histórico
+- Migration `20260401_000016_create_ai_providers.sql`: tabelas `ai_providers`, `ai_scenario_assignments` (3 cenários pré-inseridos: chat, daily-analysis, on-demand)
+- Migration `20260401_000017_create_ai_history.sql`: tabela `ai_history` com índices em user_id, scenario, created_at
+- `src/modules/ai/llm-adapter/`: `llm-adapter.ts` (lê provider do banco por cenário, decripta chave, roteia para provider), `anthropic.provider.ts` (Anthropic SDK)
+- `src/modules/ai/skill-composer/skill-composer.ts`: lê SKILL.md do `.claude/skills/`, sempre injeta `business-context` primeiro
+- `src/modules/ai/intent-detector/intent-detector.ts`: detecta skills a ativar por palavras-chave na mensagem
+- `src/modules/ai/context-builder/context-builder.ts`: monta snapshot de KPIs + top 15 campanhas dos últimos 30 dias
+- `src/modules/ai/ai.service.ts`, `ai.repository.ts`, `ai.controller.ts`, `ai.routes.ts`: CRUD de providers, atribuição de cenários, chat, análise sob demanda, histórico
+- `src/shared/queue/ai-analysis.worker.ts`: worker BullMQ para análise automática diária
+- `src/config/scheduler.ts`: job diário `daily-analysis` às 07h00 registrado
+- WsEvent `ai:analysis:ready` adicionado ao tipo union (backend + frontend)
 
 *Frontend:*
-- Seção **Admin → Modelos de IA**: cadastrar providers, configurar por cenário
-- Chat sidebar persistente em todas as telas
-- Painel de análise sob demanda ("Analisar com IA")
-- Aba **Insights de IA**: histórico de análises automáticas
+- `features/admin/ai-providers/AiProvidersPage.tsx`: CRUD de providers + atribuição por cenário
+- `features/ai/chat/AiChatSidebar.tsx`: chat flutuante persistente, botão "Analisar" para análise sob demanda
+- `AiChatSidebar` integrado no `AppShell`
+- Rota `/admin/ai-providers` no router, link "Modelos de IA" na Sidebar (admin only)
+- `packages/shared-types/src/ai.types.ts`: `AiProvider`, `AiScenarioAssignment`, `AiMessage`, etc.
 
 **Teste visual:**
 - Cadastrar chave Claude → perguntar "qual campanha tem o pior ROAS?" → resposta contextualizada com dados reais
+- Clicar "Analisar" → análise completa com os 4 skills ativos
 
 **Dependências:** Etapas 4, 5, 8
 

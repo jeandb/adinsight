@@ -128,7 +128,7 @@ function PlatformCard({
   const [expanded, setExpanded] = useState(false)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
-  const [syncDaysBack, setSyncDaysBack] = useState(7)
+  const [syncDaysBack, setSyncDaysBack] = useState(30)
 
   const fields = PLATFORM_FIELDS[platform.type]
   const statusCfg = STATUS_CONFIG[platform.status] ?? STATUS_CONFIG.DISCONNECTED
@@ -140,12 +140,19 @@ function PlatformCard({
       setCredentials({})
       setTestResult(null)
       onUpdate()
+      test.mutate()
     },
   })
 
   const test = useMutation({
     mutationFn: () => platformsApi.testConnection(platform.type),
-    onSuccess: (result) => setTestResult(result),
+    onSuccess: (result) => {
+      setTestResult(result)
+      if (result.success) {
+        onUpdate()
+        sync.mutate()
+      }
+    },
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })
@@ -210,12 +217,12 @@ function PlatformCard({
             <StatusIcon className="w-3 h-3" />
             {statusCfg.label}
           </span>
-          {(platform.status === 'CONNECTED' || platform.status === 'ACTIVE' as string) && (
+          {platform.hasCredentials && (
             <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
               <select
                 value={syncDaysBack}
                 onChange={(e) => setSyncDaysBack(Number(e.target.value))}
-                disabled={isSyncing || sync.isPending}
+                disabled={isSyncing || sync.isPending || test.isPending || save.isPending}
                 className="px-2 py-1 rounded-lg border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer disabled:opacity-50"
               >
                 {SYNC_RANGE_OPTIONS.map((opt) => (
@@ -224,8 +231,8 @@ function PlatformCard({
               </select>
               <button
                 onClick={() => sync.mutate()}
-                disabled={isSyncing || sync.isPending}
-                title="Sincronizar agora"
+                disabled={isSyncing || sync.isPending || test.isPending || save.isPending || platform.status === 'DISCONNECTED'}
+                title={platform.status === 'DISCONNECTED' ? 'Teste a conexão primeiro' : 'Sincronizar agora'}
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={cn('w-4 h-4', (isSyncing || sync.isPending) && 'animate-spin')} />

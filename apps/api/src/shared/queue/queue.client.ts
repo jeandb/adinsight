@@ -22,6 +22,10 @@ export const syncWooQueue = redisConnection
   ? new Queue<SyncWooJobData>('sync-woocommerce', { connection: redisConnection })
   : null
 
+export const aiAnalysisQueue = redisConnection
+  ? new Queue('ai-analysis', { connection: redisConnection })
+  : null
+
 export interface SyncWooJobData {
   storeId?: string
   triggeredBy: 'scheduler' | 'manual'

@@ -1,22 +1,24 @@
-import { syncCampaignsQueue, evaluateAlertsQueue, syncWooQueue } from '../shared/queue/queue.client'
+import { syncCampaignsQueue, evaluateAlertsQueue, syncWooQueue, aiAnalysisQueue } from '../shared/queue/queue.client'
 
 const PLATFORMS = ['META', 'GOOGLE', 'TIKTOK', 'PINTEREST'] as const
 
 export async function initScheduler(): Promise<void> {
-  if (!syncCampaignsQueue || !evaluateAlertsQueue || !syncWooQueue) {
+  if (!syncCampaignsQueue || !evaluateAlertsQueue || !syncWooQueue || !aiAnalysisQueue) {
     console.warn('⚠️  Scheduler desabilitado — REDIS_URL não configurado')
     return
   }
 
   // Remove existing repeatable jobs to avoid duplicates on restart
-  const [existingSync, existingAlerts, existingWoo] = await Promise.all([
+  const [existingSync, existingAlerts, existingWoo, existingAi] = await Promise.all([
     syncCampaignsQueue.getRepeatableJobs(),
     evaluateAlertsQueue.getRepeatableJobs(),
     syncWooQueue.getRepeatableJobs(),
+    aiAnalysisQueue.getRepeatableJobs(),
   ])
   for (const job of existingSync)   await syncCampaignsQueue.removeRepeatableByKey(job.key)
   for (const job of existingAlerts) await evaluateAlertsQueue.removeRepeatableByKey(job.key)
   for (const job of existingWoo)    await syncWooQueue.removeRepeatableByKey(job.key)
+  for (const job of existingAi)     await aiAnalysisQueue.removeRepeatableByKey(job.key)
 
   // Register one repeatable job per platform (every hour)
   for (const platform of PLATFORMS) {
@@ -50,5 +52,15 @@ export async function initScheduler(): Promise<void> {
     },
   )
 
-  console.log('🗓️  Scheduler registrado — sync/hora por plataforma + alertas a cada 30min + WooCommerce a cada 6h')
+  // Daily AI analysis at 07:00
+  await aiAnalysisQueue.add(
+    'daily-analysis',
+    { triggeredBy: 'scheduler' },
+    {
+      repeat: { pattern: '0 7 * * *' }, // every day at 07:00
+      jobId: 'scheduler-ai-daily-analysis',
+    },
+  )
+
+  console.log('🗓️  Scheduler registrado — sync/hora por plataforma + alertas a cada 30min + WooCommerce a cada 6h + análise IA às 07h00')
 }

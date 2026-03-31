@@ -75,7 +75,7 @@ function resolvePeriod(
     }
     case 'this_month': {
       const from = startOfMonth(today)
-      const to = today
+      const to = yesterday
       const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
       return {
         current: { from, to },

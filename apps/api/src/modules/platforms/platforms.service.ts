@@ -2,7 +2,8 @@ import { encrypt, decrypt, mask } from '../../shared/crypto'
 import { AppError } from '../../shared/middleware/error.middleware'
 import { platformsRepository } from './platforms.repository'
 import { getAdapter } from './adapter.registry'
-import { addSyncJob } from '../../shared/queue/queue.client'
+import { addSyncJob, syncCampaignsQueue } from '../../shared/queue/queue.client'
+import { runPlatformSync } from './sync.runner'
 import { PLATFORM_CREDENTIAL_FIELDS } from './platforms.types'
 import type { PlatformType, PlatformCredentials } from './platforms.types'
 
@@ -81,8 +82,16 @@ export const platformsService = {
     if (platform.status === 'NOT_CONFIGURED') {
       throw new AppError(422, 'NOT_CONNECTED', 'Plataforma não está conectada — teste a conexão primeiro')
     }
-    await addSyncJob(type, 'manual', daysBack)
-    return { queued: true, message: `Sync de ${type} enfileirado` }
+
+    if (syncCampaignsQueue) {
+      await addSyncJob(type, 'manual', daysBack)
+      return { queued: true, message: `Sync de ${type} enfileirado` }
+    }
+
+    // Redis unavailable — run synchronously
+    console.log('[sync] Redis indisponível — executando sync direto')
+    const result = await runPlatformSync(type, daysBack ?? 7)
+    return { queued: false, ...result }
   },
 
   async clearCredentials(type: PlatformType) {

@@ -12,7 +12,7 @@ export interface DashboardFilters {
   objective?: string
 }
 
-const DEFAULTS: DashboardFilters = { period: 'this_month' }
+const DEFAULTS: DashboardFilters = { period: 'last_30d' }
 
 export function useFilters() {
   const [searchParams, setSearchParams] = useSearchParams()

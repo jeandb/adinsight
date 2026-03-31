@@ -4,3 +4,4 @@ export type WsEvent =
   | { type: 'sync:failed';     payload: { platformType: string; error: string } }
   | { type: 'dashboard:refresh'; payload: { scope: 'campaigns' | 'all' } }
   | { type: 'alert:triggered'; payload: { eventId: string; ruleId: string; ruleName: string; message: string; triggeredAt: string } }
+  | { type: 'ai:analysis:ready'; payload: { scenario: string } }
