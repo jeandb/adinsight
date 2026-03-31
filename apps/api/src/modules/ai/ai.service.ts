@@ -93,11 +93,14 @@ export const aiService = {
     const needsContext = intentDetector.hasDataIntent(message)
     const context = needsContext ? await contextBuilder.buildContext() : null
 
+    // Check if context was already injected in a previous turn
+    const contextAlreadySent = history.some((m) => m.role === 'user' && m.content.includes('## Dados do Dashboard AdInsight'))
+
     const allMessages: AiMessage[] = [
       ...history,
       {
         role: 'user',
-        content: needsContext && context && history.length === 0
+        content: needsContext && context && !contextAlreadySent
           ? `${context}\n\n---\n\n${message}`
           : message,
       },
