@@ -13,12 +13,14 @@ import { campaignsRoutes } from './modules/campaigns/campaigns.routes'
 import { alertsRoutes } from './modules/alerts/alerts.routes'
 import { wooStoresRoutes, revenueRoutes } from './modules/woocommerce'
 import { aiRoutes } from './modules/ai/ai.routes'
+import { reportsRoutes } from './modules/reports/reports.routes'
 import { initWebSocketServer } from './shared/websocket/websocket.server'
 import { redisConnection } from './shared/queue/queue.client'
 import { startSyncWorker } from './shared/queue/sync-campaigns.worker'
 import { startEvaluateAlertsWorker } from './shared/queue/evaluate-alerts.worker'
 import { startSyncWooWorker } from './shared/queue/sync-woocommerce.worker'
 import { startAiAnalysisWorker } from './shared/queue/ai-analysis.worker'
+import { startSendReportWorker } from './shared/queue/send-report.worker'
 import { initScheduler } from './config/scheduler'
 
 const app: Application = express()
@@ -41,6 +43,7 @@ app.use('/api/alerts', alertsRoutes)
 app.use('/api/woo-stores', wooStoresRoutes)
 app.use('/api/revenue', revenueRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/reports', reportsRoutes)
 
 app.use(errorMiddleware)
 
@@ -57,6 +60,7 @@ if (redisConnection) {
   startEvaluateAlertsWorker()
   startSyncWooWorker()
   startAiAnalysisWorker()
+  startSendReportWorker()
   initScheduler().catch(console.error)
 }
 

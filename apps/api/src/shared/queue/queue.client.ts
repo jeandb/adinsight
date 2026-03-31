@@ -26,6 +26,10 @@ export const aiAnalysisQueue = redisConnection
   ? new Queue('ai-analysis', { connection: redisConnection })
   : null
 
+export const sendReportQueue = redisConnection
+  ? new Queue('send-report', { connection: redisConnection })
+  : null
+
 export interface SyncWooJobData {
   storeId?: string
   triggeredBy: 'scheduler' | 'manual'

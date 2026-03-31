@@ -1,24 +1,26 @@
-import { syncCampaignsQueue, evaluateAlertsQueue, syncWooQueue, aiAnalysisQueue } from '../shared/queue/queue.client'
+import { syncCampaignsQueue, evaluateAlertsQueue, syncWooQueue, aiAnalysisQueue, sendReportQueue } from '../shared/queue/queue.client'
 
 const PLATFORMS = ['META', 'GOOGLE', 'TIKTOK', 'PINTEREST'] as const
 
 export async function initScheduler(): Promise<void> {
-  if (!syncCampaignsQueue || !evaluateAlertsQueue || !syncWooQueue || !aiAnalysisQueue) {
+  if (!syncCampaignsQueue || !evaluateAlertsQueue || !syncWooQueue || !aiAnalysisQueue || !sendReportQueue) {
     console.warn('⚠️  Scheduler desabilitado — REDIS_URL não configurado')
     return
   }
 
   // Remove existing repeatable jobs to avoid duplicates on restart
-  const [existingSync, existingAlerts, existingWoo, existingAi] = await Promise.all([
+  const [existingSync, existingAlerts, existingWoo, existingAi, existingReports] = await Promise.all([
     syncCampaignsQueue.getRepeatableJobs(),
     evaluateAlertsQueue.getRepeatableJobs(),
     syncWooQueue.getRepeatableJobs(),
     aiAnalysisQueue.getRepeatableJobs(),
+    sendReportQueue.getRepeatableJobs(),
   ])
-  for (const job of existingSync)   await syncCampaignsQueue.removeRepeatableByKey(job.key)
-  for (const job of existingAlerts) await evaluateAlertsQueue.removeRepeatableByKey(job.key)
-  for (const job of existingWoo)    await syncWooQueue.removeRepeatableByKey(job.key)
-  for (const job of existingAi)     await aiAnalysisQueue.removeRepeatableByKey(job.key)
+  for (const job of existingSync)    await syncCampaignsQueue.removeRepeatableByKey(job.key)
+  for (const job of existingAlerts)  await evaluateAlertsQueue.removeRepeatableByKey(job.key)
+  for (const job of existingWoo)     await syncWooQueue.removeRepeatableByKey(job.key)
+  for (const job of existingAi)      await aiAnalysisQueue.removeRepeatableByKey(job.key)
+  for (const job of existingReports) await sendReportQueue.removeRepeatableByKey(job.key)
 
   // Register one repeatable job per platform (every hour)
   for (const platform of PLATFORMS) {
@@ -62,5 +64,15 @@ export async function initScheduler(): Promise<void> {
     },
   )
 
-  console.log('🗓️  Scheduler registrado — sync/hora por plataforma + alertas a cada 30min + WooCommerce a cada 6h + análise IA às 07h00')
+  // Check and send due scheduled reports every hour at :30
+  await sendReportQueue.add(
+    'check-due',
+    { triggeredBy: 'scheduler' },
+    {
+      repeat: { pattern: '30 * * * *' },
+      jobId: 'scheduler-send-due-reports',
+    },
+  )
+
+  console.log('🗓️  Scheduler registrado — sync/hora + alertas 30min + WooCommerce 6h + IA 07h00 + relatórios :30/hora')
 }

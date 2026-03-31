@@ -55,6 +55,43 @@ export async function sendAlertEmail(opts: SendAlertOptions): Promise<void> {
   }
 }
 
+interface SendReportOptions {
+  to: string[]
+  reportName: string
+  periodFrom: string
+  periodTo: string
+  attachment: { buffer: Buffer; mimeType: string; filename: string }
+}
+
+export async function sendReportEmail(opts: SendReportOptions): Promise<void> {
+  const message = {
+    from: env.SMTP_FROM ?? 'AdInsight <noreply@adinsight.com>',
+    to: opts.to.join(', '),
+    subject: `📊 Relatório AdInsight: ${opts.reportName}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2>📊 Relatório AdInsight</h2>
+        <p>Seu relatório <strong>${opts.reportName}</strong> referente ao período
+           <strong>${opts.periodFrom}</strong> a <strong>${opts.periodTo}</strong> está em anexo.</p>
+        <p style="color:#6b7280;font-size:12px;margin-top:24px">
+          Acesse o AdInsight para análises em tempo real e configurar seus relatórios.
+        </p>
+      </div>
+    `,
+    attachments: [{ filename: opts.attachment.filename, content: opts.attachment.buffer, contentType: opts.attachment.mimeType }],
+  }
+
+  const info = await transport.sendMail(message)
+
+  if (!env.SMTP_HOST) {
+    const parsed = JSON.parse((info as unknown as { message: string }).message)
+    console.log('\n📧 [DEV] Email de relatório (SMTP não configurado)')
+    console.log('   Para:', opts.to.join(', '))
+    console.log('   Arquivo:', opts.attachment.filename)
+    console.log('   Subject:', parsed.subject, '\n')
+  }
+}
+
 export async function sendInviteEmail(opts: SendInviteOptions): Promise<void> {
   const message = {
     from: env.SMTP_FROM ?? 'AdInsight <noreply@adinsight.com>',

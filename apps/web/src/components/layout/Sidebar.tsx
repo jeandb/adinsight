@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/revenue',   icon: DollarSign,      label: 'Faturamento' },
-  { to: '/reports',   icon: BarChart3,        label: 'Relatórios' },
+  { to: '/admin/reports', icon: BarChart3, label: 'Relatórios', roles: [UserRole.ADMIN] },
   { to: '/alerts',    icon: Bell,             label: 'Alertas' },
   { to: '/admin/users',         icon: Users,        label: 'Usuários',        roles: [UserRole.ADMIN] },
   { to: '/admin/platforms',     icon: Plug,         label: 'Integrações',     roles: [UserRole.ADMIN] },

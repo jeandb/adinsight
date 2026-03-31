@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { DollarSign, ShoppingCart, Users, TrendingUp } from 'lucide-react'
 import { revenueApi, type RevenueTimeseriesRow } from './revenue.api'
 import { wooStoresApi } from '@/features/admin/woo-stores/woo-stores.api'
+import { ExportButton } from '@/features/admin/reports/ExportButton'
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
@@ -424,8 +425,10 @@ export function RevenuePage() {
           <h1 className="text-xl font-semibold text-foreground">Faturamento</h1>
         </div>
 
-        {/* Period selector */}
-        <div className="flex gap-1 bg-muted rounded-lg p-1">
+        <div className="flex items-center gap-2">
+          <ExportButton scope="revenue" from={after.slice(0, 10)} to={before.slice(0, 10)} />
+          {/* Period selector */}
+          <div className="flex gap-1 bg-muted rounded-lg p-1">
           {PERIODS.map(({ label, days }) => (
             <button
               key={days}
@@ -439,6 +442,7 @@ export function RevenuePage() {
               {label}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

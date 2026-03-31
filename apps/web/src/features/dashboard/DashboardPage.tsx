@@ -5,6 +5,7 @@ import { useFilters, type PeriodKey, type DashboardFilters } from '@/hooks/use-f
 import { channelsApi } from '@/features/admin/channels/channels.api'
 import { useWebSocketEvent } from '@/hooks/use-websocket'
 import type { WsEvent } from '@/lib/websocket/websocket.events'
+import { ExportButton } from '@/features/admin/reports/ExportButton'
 import { KpiCardsSection } from './KpiCardsSection'
 import { TimeseriesSection } from './TimeseriesSection'
 import { DistributionSection } from './DistributionSection'
@@ -217,13 +218,25 @@ export function DashboardPage() {
   const hasActiveFilters =
     filters.period !== 'this_month' || filters.channel_id || filters.platform || filters.objective
 
+  const exportRange = (() => {
+    const today = new Date().toISOString().slice(0, 10)
+    if (filters.period === 'custom' && filters.date_from && filters.date_to)
+      return { from: filters.date_from, to: filters.date_to }
+    const days = filters.period === 'last_7d' ? 7 : filters.period === 'last_14d' ? 14 : 30
+    const from = new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+    return { from, to: today }
+  })()
+
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
-        <FilterBar filters={filters} setFilter={setFilter} setMultiple={setMultiple} />
+        <div className="flex items-center gap-2">
+          <ExportButton scope="campaigns" from={exportRange.from} to={exportRange.to} />
+          <FilterBar filters={filters} setFilter={setFilter} setMultiple={setMultiple} />
+        </div>
       </div>
 
       {/* Active filter tags + clear button */}

@@ -39,7 +39,13 @@
       "Bash(find 'C:/Users/jeanb/OneDrive/Projetos/Prof Jaque Mendes CRM' -name docker-compose* -o -name .env.example)",
       "Bash(pnpm --filter api install)",
       "Bash(pnpm type-check:*)",
-      "Bash(pnpm --filter api db:status)"
+      "Bash(pnpm --filter api db:status)",
+      "mcp__filesystem__list_allowed_directories",
+      "Bash(pnpm --filter api add xlsx multer)",
+      "Bash(pnpm --filter api add -D @types/multer)",
+      "Bash(find '/c/Users/jeanb/OneDrive/Projetos/Prof Jaque Mendes CRM/.claude/skills/' -type f -name *.md)",
+      "Bash(pnpm --filter api add pdfkit xlsx)",
+      "Bash(pnpm --filter api add -D @types/pdfkit)"
     ]
   }
 }
