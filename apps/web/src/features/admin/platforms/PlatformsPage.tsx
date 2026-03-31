@@ -146,7 +146,12 @@ function PlatformCard({
   const test = useMutation({
     mutationFn: () => platformsApi.testConnection(platform.type),
     onSuccess: (result) => setTestResult(result),
-    onError: () => setTestResult({ success: false, message: 'Falha na conexão' }),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Falha na conexão'
+      setTestResult({ success: false, message: msg })
+    },
   })
 
   const clear = useMutation({
