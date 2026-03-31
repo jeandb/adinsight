@@ -131,7 +131,7 @@ Cada etapa termina com um entregável visual testável.
 
 ## Etapa 5 — Integração Real com Plataformas de Anúncio ✅
 
-**Status:** Concluída
+**Status:** Concluída — commit `be7ef49`
 
 **O que construir:**
 
@@ -156,7 +156,7 @@ Cada etapa termina com um entregável visual testável.
 
 ## Etapa 6 — Associação de Campanhas a Canais ✅
 
-**Status:** Concluída
+**Status:** Concluída — commit `be7ef49`
 
 **O que construir:**
 
@@ -180,7 +180,7 @@ Cada etapa termina com um entregável visual testável.
 
 ## Etapa 7 — Alertas ✅
 
-**Status:** Concluída
+**Status:** Concluída — commit `823caf8`
 
 **O que foi construído:**
 
