@@ -1,6 +1,7 @@
 import { db } from '../../../shared/database/client'
 import { decrypt } from '../../../shared/crypto'
 import { callAnthropic } from './anthropic.provider'
+import { callOpenAI } from './openai.provider'
 import type { LlmMessage, LlmChatOptions, LlmChatResult, ProviderConfig } from '../llm.types'
 
 async function getProviderConfig(scenario: string): Promise<ProviderConfig | null> {
@@ -41,6 +42,8 @@ export const llmAdapter = {
     switch (config.provider) {
       case 'anthropic':
         return callAnthropic(config, messages, options)
+      case 'openai':
+        return callOpenAI(config, messages, options)
       default:
         throw new Error(`Provider "${config.provider}" não implementado`)
     }
