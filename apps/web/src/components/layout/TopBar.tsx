@@ -1,19 +1,90 @@
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut } from 'lucide-react'
+import { LogOut, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth.store'
+import { useWebSocketEvent } from '@/hooks/use-websocket'
+import type { WsEvent } from '@/lib/websocket/websocket.events'
+import { cn } from '@/lib/utils'
+
+const PLATFORM_LABEL: Record<string, string> = {
+  META: 'Meta',
+  GOOGLE: 'Google',
+  TIKTOK: 'TikTok',
+  PINTEREST: 'Pinterest',
+}
 
 export function TopBar() {
   const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
+
+  const [syncingPlatforms, setSyncingPlatforms] = useState<Set<string>>(new Set())
+  const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null)
+  const [lastSyncPlatform, setLastSyncPlatform] = useState<string | null>(null)
+
+  const handleSyncEvent = useCallback((event: WsEvent) => {
+    if (event.type === 'sync:started') {
+      setSyncingPlatforms((prev) => new Set([...prev, event.payload.platformType]))
+    } else if (event.type === 'sync:completed') {
+      setSyncingPlatforms((prev) => {
+        const next = new Set(prev)
+        next.delete(event.payload.platformType)
+        return next
+      })
+      setLastSyncAt(new Date(event.payload.timestamp))
+      setLastSyncPlatform(event.payload.platformType)
+    } else if (event.type === 'sync:failed') {
+      setSyncingPlatforms((prev) => {
+        const next = new Set(prev)
+        next.delete(event.payload.platformType)
+        return next
+      })
+    }
+  }, [])
+
+  useWebSocketEvent('sync:started', handleSyncEvent)
+  useWebSocketEvent('sync:completed', handleSyncEvent)
+  useWebSocketEvent('sync:failed', handleSyncEvent)
 
   function handleLogout() {
     clearAuth()
     navigate('/login')
   }
 
+  const isSyncing = syncingPlatforms.size > 0
+  const syncingLabel = [...syncingPlatforms]
+    .map((p) => PLATFORM_LABEL[p] ?? p)
+    .join(', ')
+
+  function formatLastSync(date: Date): string {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMin = Math.floor(diffMs / 60_000)
+    if (diffMin < 1) return 'agora mesmo'
+    if (diffMin === 1) return 'há 1 min'
+    if (diffMin < 60) return `há ${diffMin} min`
+    const diffH = Math.floor(diffMin / 60)
+    if (diffH === 1) return 'há 1h'
+    return `há ${diffH}h`
+  }
+
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-6 shrink-0">
-      <div />
+      {/* Sync status indicator */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {isSyncing ? (
+          <span className="flex items-center gap-1.5 text-blue-600">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Sincronizando {syncingLabel}...
+          </span>
+        ) : lastSyncAt ? (
+          <span className={cn('flex items-center gap-1.5')}>
+            <RefreshCw className="w-3.5 h-3.5" />
+            {lastSyncPlatform && `${PLATFORM_LABEL[lastSyncPlatform] ?? lastSyncPlatform} · `}
+            {formatLastSync(lastSyncAt)}
+          </span>
+        ) : null}
+      </div>
+
       <div className="flex items-center gap-3">
         <span className="text-sm text-muted-foreground">Olá, {user?.name?.split(' ')[0]}</span>
         <button

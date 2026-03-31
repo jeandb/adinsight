@@ -1,13 +1,15 @@
 import { encrypt, decrypt, mask } from '../../shared/crypto'
 import { AppError } from '../../shared/middleware/error.middleware'
 import { platformsRepository } from './platforms.repository'
+import { getAdapter } from './adapter.registry'
+import { addSyncJob } from '../../shared/queue/queue.client'
 import { PLATFORM_CREDENTIAL_FIELDS } from './platforms.types'
 import type { PlatformType, PlatformCredentials } from './platforms.types'
 
 function mapStatus(dbStatus: string): 'CONNECTED' | 'DISCONNECTED' | 'ERROR' {
   if (dbStatus === 'ACTIVE') return 'CONNECTED'
   if (dbStatus === 'ERROR') return 'ERROR'
-  return 'DISCONNECTED' // NOT_CONFIGURED
+  return 'DISCONNECTED'
 }
 
 function sanitizePlatform(row: Awaited<ReturnType<typeof platformsRepository.findAll>>[0]) {
@@ -51,16 +53,36 @@ export const platformsService = {
       throw new AppError(422, 'NO_CREDENTIALS', 'Credenciais não configuradas para esta plataforma')
     }
 
-    // Mock: em etapas futuras cada adapter implementará a chamada real à API
-    // Por ora simulamos sucesso para credenciais presentes
+    let credentials: Record<string, string>
     try {
-      decrypt(platform.credentials_encrypted) // valida que o dado é descriptografável
-      await platformsRepository.updateStatus(type, 'ACTIVE')
-      return { success: true, message: 'Conexão testada com sucesso (modo simulado)' }
+      credentials = JSON.parse(decrypt(platform.credentials_encrypted))
     } catch {
-      await platformsRepository.updateStatus(type, 'ERROR', 'Falha ao validar credenciais')
-      throw new AppError(422, 'CONNECTION_FAILED', 'Falha ao conectar com a plataforma')
+      await platformsRepository.updateStatus(type, 'ERROR', 'Falha ao descriptografar credenciais')
+      throw new AppError(422, 'DECRYPT_FAILED', 'Erro ao ler credenciais armazenadas')
     }
+
+    const adapter = getAdapter(type)
+    const result = await adapter.testConnection(credentials)
+
+    if (result.ok) {
+      await platformsRepository.updateStatus(type, 'ACTIVE')
+      return { success: true, message: result.message }
+    } else {
+      await platformsRepository.updateStatus(type, 'ERROR', result.message)
+      throw new AppError(422, 'CONNECTION_FAILED', result.message)
+    }
+  },
+
+  async triggerSync(type: PlatformType, daysBack?: number) {
+    const platform = await platformsRepository.findByType(type)
+    if (!platform?.credentials_encrypted) {
+      throw new AppError(422, 'NO_CREDENTIALS', 'Credenciais não configuradas para esta plataforma')
+    }
+    if (platform.status !== 'ACTIVE') {
+      throw new AppError(422, 'NOT_CONNECTED', 'Plataforma não está conectada — teste a conexão primeiro')
+    }
+    await addSyncJob(type, 'manual', daysBack)
+    return { queued: true, message: `Sync de ${type} enfileirado` }
   },
 
   async clearCredentials(type: PlatformType) {

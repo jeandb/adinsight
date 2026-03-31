@@ -1,7 +1,9 @@
 import { useState, useCallback } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ChevronUp, ChevronDown, ChevronsUpDown, Search } from 'lucide-react'
 import { dashboardApi, type CampaignRow } from './dashboard.api'
+import { channelsApi } from '@/features/admin/channels/channels.api'
+import { campaignsApi } from '@/features/campaigns/campaigns.api'
 import type { DashboardFilters } from '@/hooks/use-filters'
 
 interface CampaignsTableSectionProps {
@@ -44,8 +46,8 @@ const PLATFORM_COLORS: Record<string, string> = {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  ACTIVE: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
-  PAUSED: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  ACTIVE: 'bg-emerald-100 text-emerald-700',
+  PAUSED: 'bg-yellow-100 text-yellow-700',
   ARCHIVED: 'bg-muted text-muted-foreground',
 }
 
@@ -68,14 +70,15 @@ function SortIcon({ column, currentSort, currentDir }: SortIconProps) {
 }
 
 interface ColumnDef {
-  key: SortBy | 'name' | 'platform' | 'channel' | 'objective' | 'status'
+  key: string
   label: string
   sortable: boolean
   align: 'left' | 'right'
   render: (row: CampaignRow) => React.ReactNode
 }
 
-const COLUMNS: ColumnDef[] = [
+// Columns rendered before the channel dropdown
+const COLS_LEFT: ColumnDef[] = [
   {
     key: 'name',
     label: 'Campanha',
@@ -101,26 +104,10 @@ const COLUMNS: ColumnDef[] = [
       </span>
     ),
   },
-  {
-    key: 'channel',
-    label: 'Canal',
-    sortable: false,
-    align: 'left',
-    render: (row) =>
-      row.channelName ? (
-        <div className="flex items-center gap-1.5">
-          {row.channelColor && (
-            <span
-              className="inline-block w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: row.channelColor }}
-            />
-          )}
-          <span className="text-xs text-foreground whitespace-nowrap">{row.channelName}</span>
-        </div>
-      ) : (
-        <span className="text-xs text-muted-foreground">—</span>
-      ),
-  },
+]
+
+// Columns rendered after the channel dropdown
+const COLS_RIGHT: ColumnDef[] = [
   {
     key: 'objective',
     label: 'Objetivo',
@@ -219,9 +206,57 @@ const COLUMNS: ColumnDef[] = [
   },
 ]
 
+const ALL_COLS = [...COLS_LEFT, ...COLS_RIGHT]
+const TOTAL_COLS = ALL_COLS.length + 1 // +1 for channel
+
+// Inline channel assignment dropdown
+function ChannelCell({
+  campaignId,
+  channelName,
+  onAssigned,
+}: {
+  campaignId: string
+  channelName: string | null
+  onAssigned: () => void
+}) {
+  const { data: channels = [] } = useQuery({
+    queryKey: ['channels'],
+    queryFn: channelsApi.list,
+    staleTime: 10 * 60 * 1000,
+  })
+
+  const activeChannels = channels.filter((c) => c.status === 'ACTIVE')
+  const currentId = channelName
+    ? (activeChannels.find((c) => c.name === channelName)?.id ?? '')
+    : ''
+
+  const assign = useMutation({
+    mutationFn: (channelId: string | null) => campaignsApi.updateChannel(campaignId, channelId),
+    onSuccess: () => onAssigned(),
+  })
+
+  return (
+    <select
+      value={currentId}
+      onChange={(e) => assign.mutate(e.target.value || null)}
+      disabled={assign.isPending}
+      className="max-w-[140px] px-1.5 py-0.5 rounded border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-1 focus:ring-ring cursor-pointer disabled:opacity-50"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <option value="">— sem canal —</option>
+      {activeChannels.map((ch) => (
+        <option key={ch.id} value={ch.id}>
+          {ch.name}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 const PAGE_LIMIT = 20
 
 export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
+  const qc = useQueryClient()
   const [page, setPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortBy>('spend')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -234,6 +269,11 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
     staleTime: 5 * 60 * 1000,
     placeholderData: (prev) => prev,
   })
+
+  const handleChannelAssigned = useCallback(() => {
+    qc.invalidateQueries({ queryKey: ['dashboard', 'campaigns'] })
+    qc.invalidateQueries({ queryKey: ['campaigns', 'unassigned'] })
+  }, [qc])
 
   const handleSort = useCallback(
     (col: SortBy) => {
@@ -258,6 +298,16 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
   const from = total === 0 ? 0 : (page - 1) * PAGE_LIMIT + 1
   const to = Math.min(page * PAGE_LIMIT, total)
   const totalPages = Math.ceil(total / PAGE_LIMIT)
+
+  function renderSortableHeader(col: ColumnDef) {
+    if (!col.sortable) return col.label
+    return (
+      <span className="inline-flex items-center gap-1">
+        {col.label}
+        <SortIcon column={col.key as SortBy} currentSort={sortBy} currentDir={sortDir} />
+      </span>
+    )
+  }
 
   return (
     <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -302,7 +352,21 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-muted/40">
-              {COLUMNS.map((col) => (
+              {/* Left columns */}
+              {COLS_LEFT.map((col) => (
+                <th
+                  key={col.key}
+                  className="px-3 py-2.5 text-xs font-semibold text-muted-foreground whitespace-nowrap text-left"
+                >
+                  {col.label}
+                </th>
+              ))}
+              {/* Channel column header */}
+              <th className="px-3 py-2.5 text-xs font-semibold text-muted-foreground whitespace-nowrap text-left">
+                Canal
+              </th>
+              {/* Right columns */}
+              {COLS_RIGHT.map((col) => (
                 <th
                   key={col.key}
                   className={`px-3 py-2.5 text-xs font-semibold text-muted-foreground whitespace-nowrap ${
@@ -310,16 +374,7 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
                   } ${col.sortable ? 'cursor-pointer hover:text-foreground select-none' : ''}`}
                   onClick={col.sortable ? () => handleSort(col.key as SortBy) : undefined}
                 >
-                  <span className="inline-flex items-center gap-1">
-                    {col.label}
-                    {col.sortable && (
-                      <SortIcon
-                        column={col.key as SortBy}
-                        currentSort={sortBy}
-                        currentDir={sortDir}
-                      />
-                    )}
-                  </span>
+                  {renderSortableHeader(col)}
                 </th>
               ))}
             </tr>
@@ -328,8 +383,8 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
             {isLoading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="border-b border-border animate-pulse">
-                  {COLUMNS.map((col) => (
-                    <td key={col.key} className="px-3 py-3">
+                  {Array.from({ length: TOTAL_COLS }).map((__, j) => (
+                    <td key={j} className="px-3 py-3">
                       <div className="h-3.5 bg-muted rounded w-16" />
                     </td>
                   ))}
@@ -337,13 +392,13 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
               ))
             ) : isError ? (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={TOTAL_COLS} className="px-3 py-10 text-center text-sm text-muted-foreground">
                   Não foi possível carregar as campanhas. Tente novamente.
                 </td>
               </tr>
             ) : !data || data.rows.length === 0 ? (
               <tr>
-                <td colSpan={COLUMNS.length} className="px-3 py-10 text-center text-sm text-muted-foreground">
+                <td colSpan={TOTAL_COLS} className="px-3 py-10 text-center text-sm text-muted-foreground">
                   {search ? `Nenhuma campanha encontrada para "${search}"` : 'Nenhuma campanha encontrada no período.'}
                 </td>
               </tr>
@@ -353,7 +408,22 @@ export function CampaignsTableSection({ filters }: CampaignsTableSectionProps) {
                   key={row.id}
                   className="border-b border-border hover:bg-muted/30 transition-colors"
                 >
-                  {COLUMNS.map((col) => (
+                  {/* Left columns */}
+                  {COLS_LEFT.map((col) => (
+                    <td key={col.key} className="px-3 py-3">
+                      {col.render(row)}
+                    </td>
+                  ))}
+                  {/* Channel column — inline dropdown */}
+                  <td className="px-3 py-3">
+                    <ChannelCell
+                      campaignId={row.id}
+                      channelName={row.channelName}
+                      onAssigned={handleChannelAssigned}
+                    />
+                  </td>
+                  {/* Right columns */}
+                  {COLS_RIGHT.map((col) => (
                     <td
                       key={col.key}
                       className={`px-3 py-3 ${col.align === 'right' ? 'text-right' : ''}`}

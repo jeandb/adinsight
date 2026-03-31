@@ -24,6 +24,7 @@ export const PLATFORM_META: PlatformCredentialField[] = [
   { key: 'app_id', label: 'App ID', placeholder: 'Ex: 123456789012345' },
   { key: 'app_secret', label: 'App Secret', placeholder: '32 caracteres' },
   { key: 'access_token', label: 'Access Token' },
+  { key: 'ad_account_id', label: 'Ad Account ID', placeholder: 'Ex: 123456789 (sem act_)' },
 ]
 
 export const PLATFORM_GOOGLE: PlatformCredentialField[] = [
@@ -31,18 +32,21 @@ export const PLATFORM_GOOGLE: PlatformCredentialField[] = [
   { key: 'client_id', label: 'Client ID' },
   { key: 'client_secret', label: 'Client Secret' },
   { key: 'refresh_token', label: 'Refresh Token' },
+  { key: 'customer_id', label: 'Customer ID', placeholder: 'Ex: 123-456-7890' },
 ]
 
 export const PLATFORM_TIKTOK: PlatformCredentialField[] = [
   { key: 'app_id', label: 'App ID' },
   { key: 'app_secret', label: 'App Secret' },
   { key: 'access_token', label: 'Access Token' },
+  { key: 'advertiser_id', label: 'Advertiser ID' },
 ]
 
 export const PLATFORM_PINTEREST: PlatformCredentialField[] = [
   { key: 'app_id', label: 'App ID' },
   { key: 'app_secret', label: 'App Secret' },
   { key: 'access_token', label: 'Access Token' },
+  { key: 'ad_account_id', label: 'Ad Account ID' },
 ]
 
 export const PLATFORM_FIELDS: Record<PlatformType, PlatformCredentialField[]> = {
@@ -71,4 +75,9 @@ export const platformsApi = {
 
   clearCredentials: (type: PlatformType) =>
     apiClient.delete<{ data: PlatformItem }>(`/platforms/${type}/credentials`).then((r) => r.data.data),
+
+  syncPlatform: (type: PlatformType, daysBack?: number) =>
+    apiClient
+      .post<{ data: { queued: boolean; message: string } }>(`/platforms/${type}/sync`, daysBack ? { daysBack } : {})
+      .then((r) => r.data.data),
 }

@@ -1,14 +1,16 @@
-export type PeriodKey = 'last_7d' | 'last_14d' | 'last_30d' | 'this_month' | 'last_month'
+export type PeriodKey = 'last_7d' | 'last_14d' | 'last_30d' | 'this_month' | 'last_month' | 'custom'
 export type PlatformFilter = 'META' | 'GOOGLE' | 'TIKTOK' | 'PINTEREST'
 export type MetricKey = 'spend' | 'impressions' | 'clicks' | 'leads' | 'roas'
 export type GroupBy = 'platform' | 'channel'
-export type SortBy = 'roas' | 'cpl' | 'spend' | 'impressions' | 'clicks' | 'leads' | 'name'
+export type SortBy = 'roas' | 'cpl' | 'cpc' | 'ctr' | 'spend' | 'impressions' | 'clicks' | 'leads' | 'name'
 export type SortDir = 'asc' | 'desc'
 
 export interface DateRange { from: Date; to: Date }
 
 export interface DashboardFilters {
   period: PeriodKey
+  dateFrom?: string
+  dateTo?: string
   channelId?: string
   platform?: PlatformFilter
   objective?: string

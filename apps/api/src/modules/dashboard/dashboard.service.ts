@@ -22,18 +22,22 @@ const PLATFORM_COLORS: Record<string, string> = {
   PINTEREST: '#E60023',
 }
 
-function resolvePeriod(period: PeriodKey): { current: DateRange; previous: DateRange } {
+function subDays(d: Date, n: number): Date {
+  const r = new Date(d)
+  r.setDate(r.getDate() - n)
+  return r
+}
+
+function resolvePeriod(
+  period: PeriodKey,
+  dateFrom?: string,
+  dateTo?: string,
+): { current: DateRange; previous: DateRange } {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
   const yesterday = new Date(today)
   yesterday.setDate(today.getDate() - 1)
-
-  function subDays(d: Date, n: number): Date {
-    const r = new Date(d)
-    r.setDate(r.getDate() - n)
-    return r
-  }
 
   function startOfMonth(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth(), 1)
@@ -41,6 +45,16 @@ function resolvePeriod(period: PeriodKey): { current: DateRange; previous: DateR
 
   function endOfMonth(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0)
+  }
+
+  if (period === 'custom' && dateFrom && dateTo) {
+    const from = new Date(dateFrom + 'T00:00:00')
+    const to = new Date(dateTo + 'T00:00:00')
+    const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))
+    return {
+      current: { from, to },
+      previous: { from: subDays(from, diffDays + 1), to: subDays(from, 1) },
+    }
   }
 
   switch (period) {
@@ -130,7 +144,7 @@ function computeDeltas(current: KpiValues, previous: KpiValues): Record<keyof Kp
 
 export const dashboardService = {
   async getKpis(filters: DashboardFilters): Promise<KpiResponse> {
-    const { current: currentRange, previous: previousRange } = resolvePeriod(filters.period)
+    const { current: currentRange, previous: previousRange } = resolvePeriod(filters.period, filters.dateFrom, filters.dateTo)
     const raw = await dashboardRepository.getKpis(filters, currentRange, previousRange)
 
     const current = computeKpiValues(
@@ -158,7 +172,7 @@ export const dashboardService = {
     filters: DashboardFilters,
     metric: MetricKey,
   ): Promise<TimeseriesPoint[]> {
-    const { current: range } = resolvePeriod(filters.period)
+    const { current: range } = resolvePeriod(filters.period, filters.dateFrom, filters.dateTo)
     const rows = await dashboardRepository.getTimeseries(filters, range, metric)
 
     return rows.map((r) => ({
@@ -172,7 +186,7 @@ export const dashboardService = {
     groupBy: GroupBy,
     metric: MetricKey,
   ): Promise<DistributionItem[]> {
-    const { current: range } = resolvePeriod(filters.period)
+    const { current: range } = resolvePeriod(filters.period, filters.dateFrom, filters.dateTo)
     const rows = await dashboardRepository.getDistribution(filters, range, groupBy, metric)
 
     const total = rows.reduce((sum, r) => sum + parseFloat(r.value), 0)
@@ -196,7 +210,7 @@ export const dashboardService = {
     sortBy: SortBy,
     limit: number,
   ): Promise<TopCampaign[]> {
-    const { current: range } = resolvePeriod(filters.period)
+    const { current: range } = resolvePeriod(filters.period, filters.dateFrom, filters.dateTo)
     const rows = await dashboardRepository.getTopCampaigns(filters, range, sortBy, limit)
 
     return rows.map((r) => {
@@ -229,7 +243,7 @@ export const dashboardService = {
     sortDir: SortDir,
     search: string | null,
   ): Promise<{ rows: CampaignRow[]; total: number }> {
-    const { current: range } = resolvePeriod(filters.period)
+    const { current: range } = resolvePeriod(filters.period, filters.dateFrom, filters.dateTo)
     const { rows, total } = await dashboardRepository.getCampaigns(
       filters,
       range,

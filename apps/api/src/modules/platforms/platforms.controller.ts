@@ -43,4 +43,15 @@ export const platformsController = {
       res.json({ success: true, data: platform })
     } catch (err) { next(err) }
   },
+
+  async syncPlatform(req: Request, res: Response, next: NextFunction) {
+    try {
+      const type = parsePlatformType(req.params.type)
+      const { daysBack } = z
+        .object({ daysBack: z.coerce.number().int().min(1).max(90).optional() })
+        .parse(req.body)
+      const result = await platformsService.triggerSync(type, daysBack)
+      res.json({ success: true, data: result })
+    } catch (err) { next(err) }
+  },
 }

@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
+import { CheckCircle2, XCircle, AlertCircle, ChevronDown, ChevronUp, Loader2, RefreshCw } from 'lucide-react'
+import { useWebSocketEvent } from '@/hooks/use-websocket'
+import type { WsEvent } from '@/lib/websocket/websocket.events'
 import {
   platformsApi,
   PLATFORM_FIELDS,
@@ -47,10 +49,29 @@ const PLATFORM_ICONS: Record<PlatformType, string> = {
 
 export function PlatformsPage() {
   const qc = useQueryClient()
+  const [syncingPlatforms, setSyncingPlatforms] = useState<Set<string>>(new Set())
+
   const { data: platforms = [], isLoading } = useQuery({
     queryKey: ['platforms'],
     queryFn: platformsApi.list,
   })
+
+  const handleSyncEvent = useCallback((event: WsEvent) => {
+    if (event.type === 'sync:started') {
+      setSyncingPlatforms((prev) => new Set([...prev, event.payload.platformType]))
+    } else if (event.type === 'sync:completed' || event.type === 'sync:failed') {
+      setSyncingPlatforms((prev) => {
+        const next = new Set(prev)
+        next.delete(event.payload.platformType)
+        return next
+      })
+      qc.invalidateQueries({ queryKey: ['platforms'] })
+    }
+  }, [qc])
+
+  useWebSocketEvent('sync:started', handleSyncEvent)
+  useWebSocketEvent('sync:completed', handleSyncEvent)
+  useWebSocketEvent('sync:failed', handleSyncEvent)
 
   if (isLoading) {
     return (
@@ -75,6 +96,8 @@ export function PlatformsPage() {
             key={platform.id}
             platform={platform}
             onUpdate={() => qc.invalidateQueries({ queryKey: ['platforms'] })}
+            isSyncing={syncingPlatforms.has(platform.type)}
+            onSync={() => qc.invalidateQueries({ queryKey: ['platforms'] })}
           />
         ))}
         {platforms.length === 0 && (
@@ -85,16 +108,27 @@ export function PlatformsPage() {
   )
 }
 
+const SYNC_RANGE_OPTIONS = [
+  { value: 7,  label: 'Últimos 7 dias' },
+  { value: 30, label: 'Últimos 30 dias' },
+  { value: 90, label: 'Últimos 90 dias' },
+]
+
 function PlatformCard({
   platform,
   onUpdate,
+  isSyncing,
+  onSync,
 }: {
   platform: PlatformItem
   onUpdate: () => void
+  isSyncing: boolean
+  onSync: () => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const [credentials, setCredentials] = useState<Record<string, string>>({})
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
+  const [syncDaysBack, setSyncDaysBack] = useState(7)
 
   const fields = PLATFORM_FIELDS[platform.type]
   const statusCfg = STATUS_CONFIG[platform.status] ?? STATUS_CONFIG.DISCONNECTED
@@ -121,6 +155,11 @@ function PlatformCard({
       setTestResult(null)
       onUpdate()
     },
+  })
+
+  const sync = useMutation({
+    mutationFn: () => platformsApi.syncPlatform(platform.type, syncDaysBack),
+    onSuccess: () => onSync(),
   })
 
   const allFieldsFilled = fields.every((f) => credentials[f.key]?.trim())
@@ -160,6 +199,28 @@ function PlatformCard({
             <StatusIcon className="w-3 h-3" />
             {statusCfg.label}
           </span>
+          {(platform.status === 'CONNECTED' || platform.status === 'ACTIVE' as string) && (
+            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              <select
+                value={syncDaysBack}
+                onChange={(e) => setSyncDaysBack(Number(e.target.value))}
+                disabled={isSyncing || sync.isPending}
+                className="px-2 py-1 rounded-lg border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer disabled:opacity-50"
+              >
+                {SYNC_RANGE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <button
+                onClick={() => sync.mutate()}
+                disabled={isSyncing || sync.isPending}
+                title="Sincronizar agora"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors disabled:opacity-50"
+              >
+                <RefreshCw className={cn('w-4 h-4', (isSyncing || sync.isPending) && 'animate-spin')} />
+              </button>
+            </div>
+          )}
           {expanded ? (
             <ChevronUp className="w-4 h-4 text-muted-foreground" />
           ) : (

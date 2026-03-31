@@ -35,7 +35,11 @@
       "Bash(pnpm --filter api db:seed)",
       "Bash(find 'C:\\\\Users\\\\jeanb\\\\OneDrive\\\\Projetos\\\\Prof Jaque Mendes CRM\\\\apps\\\\web\\\\src' -name *.tsx -o -name *.ts)",
       "Bash(pnpm --filter web type-check)",
-      "Bash(pnpm --filter api type-check)"
+      "Bash(pnpm --filter api type-check)",
+      "Bash(find 'C:/Users/jeanb/OneDrive/Projetos/Prof Jaque Mendes CRM' -name docker-compose* -o -name .env.example)",
+      "Bash(pnpm --filter api install)",
+      "Bash(pnpm type-check:*)",
+      "Bash(pnpm --filter api db:status)"
     ]
   }
 }

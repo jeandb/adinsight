@@ -17,8 +17,8 @@ export interface PlatformCredentials {
 }
 
 export const PLATFORM_CREDENTIAL_FIELDS: Record<PlatformType, string[]> = {
-  META:      ['app_id', 'app_secret', 'access_token'],
-  GOOGLE:    ['developer_token', 'client_id', 'client_secret', 'refresh_token'],
-  TIKTOK:    ['app_id', 'app_secret', 'access_token'],
-  PINTEREST: ['app_id', 'app_secret', 'access_token'],
+  META:      ['app_id', 'app_secret', 'access_token', 'ad_account_id'],
+  GOOGLE:    ['developer_token', 'client_id', 'client_secret', 'refresh_token', 'customer_id'],
+  TIKTOK:    ['app_id', 'app_secret', 'access_token', 'advertiser_id'],
+  PINTEREST: ['app_id', 'app_secret', 'access_token', 'ad_account_id'],
 }

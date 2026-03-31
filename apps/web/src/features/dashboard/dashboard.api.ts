@@ -68,6 +68,8 @@ export interface CampaignsMeta {
 
 function toParams(filters: DashboardFilters): Record<string, string> {
   const p: Record<string, string> = { period: filters.period }
+  if (filters.date_from) p.date_from = filters.date_from
+  if (filters.date_to) p.date_to = filters.date_to
   if (filters.channel_id) p.channel_id = filters.channel_id
   if (filters.platform) p.platform = filters.platform
   if (filters.objective) p.objective = filters.objective

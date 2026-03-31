@@ -9,7 +9,7 @@ Cada etapa termina com um entregável visual testável.
 
 ## Etapa 1 — Fundação do Monorepo + Autenticação ✅
 
-**Status:** Concluída
+**Status:** Concluída — commit `a17ac66`
 
 **O que foi construído:**
 - Monorepo pnpm workspaces (`apps/api`, `apps/web`, `packages/shared-types`)
@@ -42,9 +42,9 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 2 — Painel Admin: Usuários e Integrações de Plataforma ⏳
+## Etapa 2 — Painel Admin: Usuários e Integrações de Plataforma ✅
 
-**Status:** Pendente
+**Status:** Concluída — commits `4cc299b` / `53ec133`
 
 **O que construir:**
 
@@ -71,9 +71,9 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 3 — Canais de Negócio ⏳
+## Etapa 3 — Canais de Negócio ✅
 
-**Status:** Pendente
+**Status:** Concluída — commit `0a95ff5`
 
 **O que construir:**
 
@@ -92,11 +92,9 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 4 — Dashboard com Dados Seed ⏳
+## Etapa 4 — Dashboard com Dados Seed ✅
 
-**Status:** Pendente
-
-> Etapa mais trabalhosa. Após ela o produto parece real para demonstração.
+**Status:** Concluída — commit `7c3d3e0`
 
 **O que construir:**
 
@@ -131,9 +129,9 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 5 — Integração Real com Plataformas de Anúncio ⏳
+## Etapa 5 — Integração Real com Plataformas de Anúncio ✅
 
-**Status:** Pendente
+**Status:** Concluída
 
 **O que construir:**
 
@@ -156,9 +154,9 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 6 — Associação de Campanhas a Canais ⏳
+## Etapa 6 — Associação de Campanhas a Canais ✅
 
-**Status:** Pendente
+**Status:** Concluída
 
 **O que construir:**
 

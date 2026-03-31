@@ -298,6 +298,8 @@ export const dashboardRepository = {
     const orderColumnMap: Record<SortBy, string> = {
       roas: `SUM(ms.revenue_cents)::numeric / NULLIF(SUM(ms.spend_cents), 0)`,
       cpl: `SUM(ms.spend_cents)::numeric / NULLIF(SUM(ms.leads), 0)`,
+      cpc: `SUM(ms.spend_cents)::numeric / NULLIF(SUM(ms.clicks), 0)`,
+      ctr: `SUM(ms.clicks)::numeric / NULLIF(SUM(ms.impressions), 0)`,
       spend: `SUM(ms.spend_cents)`,
       impressions: `SUM(ms.impressions)`,
       clicks: `SUM(ms.clicks)`,

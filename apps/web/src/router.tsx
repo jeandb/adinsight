@@ -7,6 +7,7 @@ import { AppShell } from './components/layout/AppShell'
 import { UsersPage } from './features/admin/users/UsersPage'
 import { PlatformsPage } from './features/admin/platforms/PlatformsPage'
 import { ChannelsPage } from './features/admin/channels/ChannelsPage'
+import { ReviewQueuePage } from './features/admin/campaigns/ReviewQueuePage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
@@ -125,6 +126,14 @@ export function Router() {
               element={
                 <RequireAuth roles={[UserRole.ADMIN, UserRole.TRAFFIC_MANAGER]}>
                   <ChannelsPage />
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/admin/campaigns"
+              element={
+                <RequireAuth roles={[UserRole.ADMIN, UserRole.TRAFFIC_MANAGER]}>
+                  <ReviewQueuePage />
                 </RequireAuth>
               }
             />

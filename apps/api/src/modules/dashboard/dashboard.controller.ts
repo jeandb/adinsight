@@ -4,8 +4,10 @@ import { dashboardService } from './dashboard.service'
 
 const filtersSchema = z.object({
   period: z
-    .enum(['last_7d', 'last_14d', 'last_30d', 'this_month', 'last_month'])
-    .default('last_30d'),
+    .enum(['last_7d', 'last_14d', 'last_30d', 'this_month', 'last_month', 'custom'])
+    .default('this_month'),
+  date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   channel_id: z.string().uuid().optional(),
   platform: z.enum(['META', 'GOOGLE', 'TIKTOK', 'PINTEREST']).optional(),
   objective: z
@@ -17,6 +19,8 @@ function parseFilters(query: Request['query']) {
   const parsed = filtersSchema.parse(query)
   return {
     period: parsed.period,
+    dateFrom: parsed.date_from,
+    dateTo: parsed.date_to,
     channelId: parsed.channel_id,
     platform: parsed.platform,
     objective: parsed.objective,
@@ -84,7 +88,7 @@ export const dashboardController = {
       const page = z.coerce.number().int().min(1).default(1).parse(req.query.page)
       const limit = z.coerce.number().int().min(1).max(100).default(20).parse(req.query.limit)
       const sortBy = z
-        .enum(['roas', 'cpl', 'spend', 'impressions', 'clicks', 'leads', 'name'])
+        .enum(['roas', 'cpl', 'cpc', 'ctr', 'spend', 'impressions', 'clicks', 'leads', 'name'])
         .default('spend')
         .parse(req.query.sort_by)
       const sortDir = z.enum(['asc', 'desc']).default('desc').parse(req.query.sort_dir)
