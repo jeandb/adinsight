@@ -165,6 +165,12 @@ function PlatformCard({
   const sync = useMutation({
     mutationFn: () => platformsApi.syncPlatform(platform.type, syncDaysBack),
     onSuccess: () => onSync(),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { error?: { message?: string } } } })
+          ?.response?.data?.error?.message ?? 'Falha ao enfileirar sync'
+      setTestResult({ success: false, message: msg })
+    },
   })
 
   const allFieldsFilled = fields.every((f) => credentials[f.key]?.trim())
@@ -316,7 +322,7 @@ function PlatformCard({
                   )}
                 </button>
 
-                {platform.status === 'CONNECTED' && (
+                {(platform.status === 'CONNECTED' || platform.status === 'ERROR') && (
                   <div className="flex items-center gap-1.5">
                     <select
                       value={syncDaysBack}

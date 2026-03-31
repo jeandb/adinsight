@@ -78,7 +78,7 @@ export const platformsService = {
     if (!platform?.credentials_encrypted) {
       throw new AppError(422, 'NO_CREDENTIALS', 'Credenciais não configuradas para esta plataforma')
     }
-    if (platform.status !== 'ACTIVE') {
+    if (platform.status === 'NOT_CONFIGURED') {
       throw new AppError(422, 'NOT_CONNECTED', 'Plataforma não está conectada — teste a conexão primeiro')
     }
     await addSyncJob(type, 'manual', daysBack)
