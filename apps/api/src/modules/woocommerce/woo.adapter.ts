@@ -22,22 +22,36 @@ interface WooRawSubscription {
   line_items: Array<{ name: string }>
 }
 
-function authParams(creds: WooCredentials): URLSearchParams {
-  const p = new URLSearchParams()
-  p.set('consumer_key', creds.consumerKey)
-  p.set('consumer_secret', creds.consumerSecret)
-  return p
+/** Build HTTP Basic Auth header — credentials in header, not in URL (avoids Cloudflare WAF) */
+function basicAuthHeader(creds: WooCredentials): string {
+  return 'Basic ' + Buffer.from(`${creds.consumerKey}:${creds.consumerSecret}`).toString('base64')
 }
 
-async function wooFetch<T>(url: string, params: URLSearchParams): Promise<T> {
+async function wooFetch<T>(
+  url: string,
+  creds: WooCredentials,
+  params: URLSearchParams,
+): Promise<T> {
   const fullUrl = `${url}?${params.toString()}`
   const res = await fetch(fullUrl, {
-    headers: { 'Accept': 'application/json', 'User-Agent': 'AdInsight/1.0' },
-    signal: AbortSignal.timeout(15_000),
+    headers: {
+      'Accept':          'application/json',
+      'Content-Type':    'application/json',
+      'Authorization':   basicAuthHeader(creds),
+      'User-Agent':      'Mozilla/5.0 (compatible; AdInsight/1.0; +https://adinsight.com)',
+      'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+    },
+    signal: AbortSignal.timeout(20_000),
   })
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    throw new Error(`WooCommerce API ${res.status}: ${text}`)
+    // Surface a clearer message if Cloudflare challenge is returned
+    if (text.includes('cf-chl') || text.includes('Just a moment') || text.includes('cloudflare')) {
+      throw new Error(
+        'Cloudflare bloqueou a requisição. Configure uma regra de bypass no painel Cloudflare para o caminho /wp-json/wc/v3/* (veja documentação).',
+      )
+    }
+    throw new Error(`WooCommerce API ${res.status}: ${text.slice(0, 200)}`)
   }
   return res.json() as Promise<T>
 }
@@ -53,12 +67,12 @@ async function fetchAllPages<T>(
   let page = 1
 
   while (true) {
-    const params = authParams(creds)
+    const params = new URLSearchParams()
     params.set('per_page', '100')
     params.set('page', String(page))
     for (const [k, v] of Object.entries(extraParams)) params.set(k, v)
 
-    const items = await wooFetch<T[]>(`${baseUrl}${endpoint}`, params)
+    const items = await wooFetch<T[]>(`${baseUrl}${endpoint}`, creds, params)
     results.push(...items)
 
     if (items.length < 100) break
@@ -74,9 +88,8 @@ function toCents(value: string): number {
 
 export async function testWooConnection(creds: WooCredentials): Promise<{ ok: boolean; error?: string }> {
   try {
-    const params = authParams(creds)
-    params.set('per_page', '1')
-    await wooFetch<unknown>(`${creds.url}/wp-json/wc/v3/orders`, params)
+    const params = new URLSearchParams({ per_page: '1' })
+    await wooFetch<unknown>(`${creds.url}/wp-json/wc/v3/orders`, creds, params)
     return { ok: true }
   } catch (err) {
     return { ok: false, error: (err as Error).message }
