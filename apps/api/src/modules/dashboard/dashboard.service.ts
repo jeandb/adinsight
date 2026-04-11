@@ -105,12 +105,14 @@ function computeKpiValues(
   clicks: number,
   spendCents: number,
   leads: number,
+  purchases: number,
   revenueCents: number,
 ): KpiValues {
   const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
   const cpc = clicks > 0 ? spendCents / clicks / 100 : 0
   const cpl = leads > 0 ? spendCents / leads / 100 : 0
   const roas = spendCents > 0 ? revenueCents / spendCents : 0
+  const cpa = purchases > 0 ? spendCents / purchases / 100 : 0
 
   return {
     spendCents,
@@ -121,6 +123,9 @@ function computeKpiValues(
     cpl,
     leads,
     roas,
+    purchases,
+    revenueCents,
+    cpa,
   }
 }
 
@@ -139,6 +144,9 @@ function computeDeltas(current: KpiValues, previous: KpiValues): Record<keyof Kp
     cpl: delta(current.cpl, previous.cpl),
     leads: delta(current.leads, previous.leads),
     roas: delta(current.roas, previous.roas),
+    purchases: delta(current.purchases, previous.purchases),
+    revenueCents: delta(current.revenueCents, previous.revenueCents),
+    cpa: delta(current.cpa, previous.cpa),
   }
 }
 
@@ -152,6 +160,7 @@ export const dashboardService = {
       parseInt(raw.clicks, 10),
       parseInt(raw.spend_cents, 10),
       parseInt(raw.leads, 10),
+      parseInt(raw.purchases, 10),
       parseInt(raw.revenue_cents, 10),
     )
 
@@ -160,6 +169,7 @@ export const dashboardService = {
       parseInt(raw.prev_clicks, 10),
       parseInt(raw.prev_spend_cents, 10),
       parseInt(raw.prev_leads, 10),
+      parseInt(raw.prev_purchases, 10),
       parseInt(raw.prev_revenue_cents, 10),
     )
 
@@ -216,10 +226,12 @@ export const dashboardService = {
     return rows.map((r) => {
       const spendCents = parseInt(r.spend_cents, 10)
       const leads = parseInt(r.leads, 10)
+      const purchases = parseInt(r.purchases, 10)
       const revenueCents = parseInt(r.revenue_cents, 10)
 
       const roas = spendCents > 0 ? revenueCents / spendCents : 0
       const cpl = leads > 0 ? spendCents / leads / 100 : 0
+      const cpa = purchases > 0 ? spendCents / purchases / 100 : 0
 
       return {
         id: r.id,
@@ -229,8 +241,11 @@ export const dashboardService = {
         channelColor: r.channel_color,
         spendCents,
         leads,
+        purchases,
+        revenueCents,
         roas,
         cpl,
+        cpa,
       }
     })
   },
@@ -259,12 +274,14 @@ export const dashboardService = {
       const impressions = parseInt(r.impressions, 10)
       const clicks = parseInt(r.clicks, 10)
       const leads = parseInt(r.leads, 10)
+      const purchases = parseInt(r.purchases, 10)
       const revenueCents = parseInt(r.revenue_cents, 10)
 
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
       const cpc = clicks > 0 ? spendCents / clicks / 100 : 0
       const cpl = leads > 0 ? spendCents / leads / 100 : 0
       const roas = spendCents > 0 ? revenueCents / spendCents : 0
+      const cpa = purchases > 0 ? spendCents / purchases / 100 : 0
 
       return {
         id: r.id,
@@ -281,6 +298,9 @@ export const dashboardService = {
         cpc,
         cpl,
         leads,
+        purchases,
+        revenueCents,
+        cpa,
         roas,
       }
     })

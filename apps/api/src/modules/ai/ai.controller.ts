@@ -46,6 +46,13 @@ export const aiController = {
     } catch (err) { next(err) }
   },
 
+  async listModels(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = await aiService.listModels(req.params.id)
+      res.json({ success: true, data })
+    } catch (err) { next(err) }
+  },
+
   // Scenarios
   async listScenarios(_req: Request, res: Response, next: NextFunction) {
     try {

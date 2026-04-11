@@ -6,11 +6,13 @@ interface KpiRawRow {
   clicks: string
   spend_cents: string
   leads: string
+  purchases: string
   revenue_cents: string
   prev_impressions: string
   prev_clicks: string
   prev_spend_cents: string
   prev_leads: string
+  prev_purchases: string
   prev_revenue_cents: string
 }
 
@@ -33,6 +35,7 @@ interface TopCampaignRawRow {
   channel_color: string | null
   spend_cents: string
   leads: string
+  purchases: string
   revenue_cents: string
 }
 
@@ -48,6 +51,7 @@ interface CampaignRawRow {
   impressions: string
   clicks: string
   leads: string
+  purchases: string
   revenue_cents: string
 }
 
@@ -73,6 +77,7 @@ export const dashboardRepository = {
           COALESCE(SUM(ms.clicks), 0)         AS clicks,
           COALESCE(SUM(ms.spend_cents), 0)    AS spend_cents,
           COALESCE(SUM(ms.leads), 0)          AS leads,
+          COALESCE(SUM(ms.purchases), 0)      AS purchases,
           COALESCE(SUM(ms.revenue_cents), 0)  AS revenue_cents
         FROM metric_snapshots ms
         JOIN campaigns c ON c.id = ms.campaign_id
@@ -88,6 +93,7 @@ export const dashboardRepository = {
           COALESCE(SUM(ms.clicks), 0)         AS clicks,
           COALESCE(SUM(ms.spend_cents), 0)    AS spend_cents,
           COALESCE(SUM(ms.leads), 0)          AS leads,
+          COALESCE(SUM(ms.purchases), 0)      AS purchases,
           COALESCE(SUM(ms.revenue_cents), 0)  AS revenue_cents
         FROM metric_snapshots ms
         JOIN campaigns c ON c.id = ms.campaign_id
@@ -102,11 +108,13 @@ export const dashboardRepository = {
         p.clicks,
         p.spend_cents,
         p.leads,
+        p.purchases,
         p.revenue_cents,
         prev.impressions   AS prev_impressions,
         prev.clicks        AS prev_clicks,
         prev.spend_cents   AS prev_spend_cents,
         prev.leads         AS prev_leads,
+        prev.purchases     AS prev_purchases,
         prev.revenue_cents AS prev_revenue_cents
       FROM period_data p, prev_data prev`,
       [
@@ -263,6 +271,7 @@ export const dashboardRepository = {
         bc.color                         AS channel_color,
         COALESCE(SUM(ms.spend_cents), 0)   AS spend_cents,
         COALESCE(SUM(ms.leads), 0)         AS leads,
+        COALESCE(SUM(ms.purchases), 0)     AS purchases,
         COALESCE(SUM(ms.revenue_cents), 0) AS revenue_cents
       FROM campaigns c
       JOIN ad_platforms ap ON ap.id = c.platform_id
@@ -329,6 +338,7 @@ export const dashboardRepository = {
         COALESCE(SUM(ms.impressions), 0)   AS impressions,
         COALESCE(SUM(ms.clicks), 0)        AS clicks,
         COALESCE(SUM(ms.leads), 0)         AS leads,
+        COALESCE(SUM(ms.purchases), 0)     AS purchases,
         COALESCE(SUM(ms.revenue_cents), 0) AS revenue_cents
       FROM campaigns c
       JOIN ad_platforms ap ON ap.id = c.platform_id

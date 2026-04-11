@@ -171,7 +171,10 @@ function PlatformCard({
 
   const sync = useMutation({
     mutationFn: () => platformsApi.syncPlatform(platform.type, syncDaysBack),
-    onSuccess: () => onSync(),
+    onSuccess: (result) => {
+      setTestResult({ success: true, message: result.message || 'Sincronização enfileirada com sucesso' })
+      onSync()
+    },
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { error?: { message?: string } } } })

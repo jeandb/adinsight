@@ -280,11 +280,11 @@ Cada etapa termina com um entregável visual testável.
 
 ---
 
-## Etapa 10 — Exportação e Relatórios Automáticos ⏳
+## Etapa 10 — Exportação e Relatórios Automáticos ✅
 
-**Status:** Pendente
+**Status:** Concluída — commit `0e1f6fe`
 
-**O que construir:**
+**O que foi construído:**
 
 *Backend:*
 - Geração de PDF (Puppeteer — snapshot do dashboard com filtros aplicados)

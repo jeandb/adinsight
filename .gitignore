@@ -8,3 +8,5 @@ build/
 Thumbs.db
 .pnpm-store/
 *.pdf
+docker-compose.prod.yml
+.claude/worktrees/

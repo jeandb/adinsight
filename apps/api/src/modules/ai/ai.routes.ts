@@ -13,6 +13,7 @@ aiRoutes.get('/providers', requireRole(UserRole.ADMIN), aiController.listProvide
 aiRoutes.post('/providers', requireRole(UserRole.ADMIN), aiController.createProvider)
 aiRoutes.put('/providers/:id', requireRole(UserRole.ADMIN), aiController.updateProvider)
 aiRoutes.delete('/providers/:id', requireRole(UserRole.ADMIN), aiController.deleteProvider)
+aiRoutes.get('/providers/:id/models', requireRole(UserRole.ADMIN), aiController.listModels)
 
 // Scenario assignments (admin only)
 aiRoutes.get('/scenarios', requireRole(UserRole.ADMIN), aiController.listScenarios)

@@ -25,6 +25,9 @@ export interface KpiValues {
   cpl: number      // R$
   leads: number
   roas: number     // multiplier
+  purchases: number
+  revenueCents: number
+  cpa: number      // R$ (spend / purchases)
 }
 
 export interface KpiResponse {
@@ -50,8 +53,11 @@ export interface TopCampaign {
   channelColor: string | null
   spendCents: number
   leads: number
+  purchases: number
+  revenueCents: number
   roas: number
   cpl: number
+  cpa: number
 }
 
 export interface CampaignRow {
@@ -69,5 +75,8 @@ export interface CampaignRow {
   cpc: number
   cpl: number
   leads: number
+  purchases: number
+  revenueCents: number
+  cpa: number
   roas: number
 }

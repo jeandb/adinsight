@@ -31,4 +31,7 @@ export const aiProvidersApi = {
 
   assignScenario: (scenario: string, providerId: string | null) =>
     apiClient.put<{ data: AiScenarioAssignment[] }>(`/ai/scenarios/${scenario}`, { providerId }).then((r) => r.data.data),
+
+  listModels: (providerId: string) =>
+    apiClient.get<{ data: { id: string; name: string }[] }>(`/ai/providers/${providerId}/models`).then((r) => r.data.data),
 }

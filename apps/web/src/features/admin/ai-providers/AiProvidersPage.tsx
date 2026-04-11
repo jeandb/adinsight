@@ -11,10 +11,29 @@ const PROVIDER_OPTIONS = [
   { value: 'gemini',    label: 'Google (Gemini)' },
 ]
 
+const PROVIDER_MODELS: Record<string, { id: string; name: string }[]> = {
+  anthropic: [
+    { id: 'claude-opus-4-6',           name: 'Claude Opus 4.6' },
+    { id: 'claude-sonnet-4-6',         name: 'Claude Sonnet 4.6' },
+    { id: 'claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
+  ],
+  openai: [
+    { id: 'gpt-4o',        name: 'GPT-4o' },
+    { id: 'gpt-4o-mini',   name: 'GPT-4o Mini' },
+    { id: 'gpt-4-turbo',   name: 'GPT-4 Turbo' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+  ],
+  gemini: [
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-pro',   name: 'Gemini 1.5 Pro' },
+    { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
+  ],
+}
+
 const PROVIDER_DEFAULTS: Record<string, string> = {
   anthropic: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
-  gemini: 'gemini-1.5-pro',
+  gemini: 'gemini-2.0-flash',
 }
 
 const SCENARIO_LABELS: Record<string, string> = {
@@ -179,6 +198,15 @@ function ProviderModal({
     isActive: provider?.isActive ?? true,
   })
 
+  const { data: remoteModels, isFetching: fetchingModels } = useQuery({
+    queryKey: ['ai-provider-models', provider?.id],
+    queryFn: () => aiProvidersApi.listModels(provider!.id),
+    enabled: !!provider,
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const modelOptions = remoteModels ?? PROVIDER_MODELS[form.provider] ?? []
+
   const createMutation = useMutation({
     mutationFn: () => aiProvidersApi.createProvider({
       name: form.name,
@@ -247,13 +275,20 @@ function ProviderModal({
           )}
 
           <div>
-            <label className="block text-xs font-medium text-foreground mb-1">Modelo</label>
-            <input
+            <label className="block text-xs font-medium text-foreground mb-1">
+              Modelo
+              {fetchingModels && <span className="ml-1.5 text-muted-foreground font-normal">(buscando modelos...)</span>}
+            </label>
+            <select
               value={form.model}
               onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-              placeholder="Ex: claude-sonnet-4-6"
-              className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+              disabled={fetchingModels}
+              className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+            >
+              {modelOptions.map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>

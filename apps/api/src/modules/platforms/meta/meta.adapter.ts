@@ -103,9 +103,14 @@ export const metaAdapter: PlatformAdapter = {
       const findValue = (type: string) =>
         Math.round(parseFloat(row.action_values?.find((a) => a.action_type === type)?.value ?? '0') * 100)
 
-      const leads = findAction('lead') + findAction('onsite_conversion.lead_grouped')
-      const purchases = findAction('purchase') + findAction('omni_purchase')
-      const revenueCents = findValue('purchase') + findValue('omni_purchase')
+      // purchase = web pixel only (matches Meta Ads Manager default for WooCommerce)
+      // omni_purchase includes offline/app/Meta Shop and inflates vs. Ads Manager
+      const purchases = findAction('purchase')
+      const revenueCents = findValue('purchase')
+
+      // lead = pixel-tracked leads; onsite_conversion.lead_grouped includes Meta-native
+      // leads that may not match Ads Manager "Leads" column — use pixel lead only
+      const leads = findAction('lead')
 
       return {
         externalCampaignId: row.campaign_id,

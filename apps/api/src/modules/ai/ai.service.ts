@@ -55,6 +55,10 @@ export const aiService = {
     return sanitizeProvider(row)
   },
 
+  async listModels(providerId: string) {
+    return llmAdapter.listModels(providerId)
+  },
+
   async deleteProvider(id: string) {
     const row = await aiRepository.findProviderById(id)
     if (!row) throw new AppError(404, 'NOT_FOUND', 'Provider não encontrado')
