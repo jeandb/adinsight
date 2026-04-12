@@ -85,7 +85,7 @@ const COLS_LEFT: ColumnDef[] = [
     sortable: false,
     align: 'left',
     render: (row) => (
-      <span className="text-sm font-medium text-foreground max-w-xs truncate block">
+      <span title={row.name} className="text-sm font-medium text-foreground max-w-xs truncate block">
         {row.name}
       </span>
     ),

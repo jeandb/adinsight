@@ -63,7 +63,7 @@ function CampaignBar({ campaign, sortBy, maxValue, rank }: CampaignRowProps) {
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs text-muted-foreground w-4 shrink-0">{rank}.</span>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{campaign.name}</p>
+            <p title={campaign.name} className="text-sm font-medium text-foreground truncate">{campaign.name}</p>
             <div className="flex items-center gap-2 mt-0.5">
               <span
                 className="inline-block px-1.5 py-0.5 rounded text-xs font-medium text-white"
