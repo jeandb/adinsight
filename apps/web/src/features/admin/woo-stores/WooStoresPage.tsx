@@ -5,7 +5,7 @@ import {
   Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff, Pencil,
 } from 'lucide-react'
 import { wooStoresApi, type WooStore, type WooSourceType } from './woo-stores.api'
-import { channelsApi } from '@/features/admin/channels/channels.api'
+import { channelsApi, type Channel } from '@/features/admin/channels/channels.api'
 
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -456,12 +456,18 @@ function FileImportZone({ store }: { store: WooStore }) {
 
 // ─── Store Card ───────────────────────────────────────────────────────────────
 
-function StoreCard({ store }: { store: WooStore }) {
+function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }) {
   const qc = useQueryClient()
   const [showCredentials, setShowCredentials] = useState(false)
   const [showEdit,        setShowEdit]        = useState(false)
   const statusCfg = STATUS_CONFIG[store.status]
   const StatusIcon = statusCfg.icon
+
+  const updateChannel = useMutation({
+    mutationFn: (channelId: string | null) =>
+      wooStoresApi.updateStore(store.id, { channelId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['woo-stores'] }),
+  })
 
   const test = useMutation({
     mutationFn: () => wooStoresApi.testConnection(store.id),
@@ -538,6 +544,30 @@ function StoreCard({ store }: { store: WooStore }) {
           <p className="text-xs text-destructive bg-destructive/10 rounded-lg px-3 py-2">
             {store.lastError}
           </p>
+        )}
+
+        {/* Channel association */}
+        {channels.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground shrink-0">Canal:</span>
+            <select
+              value={store.channelId ?? ''}
+              onChange={(e) => updateChannel.mutate(e.target.value || null)}
+              disabled={updateChannel.isPending}
+              className="flex-1 px-2 py-1 rounded-lg border border-input bg-background text-foreground text-xs focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer disabled:opacity-60"
+            >
+              <option value="">— sem canal —</option>
+              {channels.map((ch) => (
+                <option key={ch.id} value={ch.id}>{ch.name}</option>
+              ))}
+            </select>
+            {updateChannel.isPending && (
+              <span className="text-xs text-muted-foreground shrink-0">Salvando...</span>
+            )}
+            {updateChannel.isSuccess && (
+              <CheckCircle2 className="w-3.5 h-3.5 text-green-600 shrink-0" />
+            )}
+          </div>
         )}
 
         {/* Actions — branch by source type */}
@@ -631,6 +661,12 @@ export function WooStoresPage() {
     staleTime: 60_000,
   })
 
+  const { data: channels = [] } = useQuery({
+    queryKey: ['channels'],
+    queryFn: channelsApi.list,
+    staleTime: 10 * 60 * 1000,
+  })
+
   const active = stores.filter((s) => s.status === 'ACTIVE').length
 
   return (
@@ -673,7 +709,7 @@ export function WooStoresPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {stores.map((store) => (
-            <StoreCard key={store.id} store={store} />
+            <StoreCard key={store.id} store={store} channels={channels} />
           ))}
         </div>
       )}
