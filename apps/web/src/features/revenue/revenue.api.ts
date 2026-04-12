@@ -37,11 +37,15 @@ export const revenueApi = {
   getKpis: (after: string, before: string) =>
     apiClient.get<{ data: RevenueKpis }>('/revenue/kpis', { params: { after, before } }).then((r) => r.data.data),
 
-  getTimeseries: (after: string, before: string) =>
-    apiClient.get<{ data: RevenueTimeseriesRow[] }>('/revenue/timeseries', { params: { after, before } }).then((r) => r.data.data),
+  getTimeseries: (after: string, before: string, channelId?: string) =>
+    apiClient.get<{ data: RevenueTimeseriesRow[] }>('/revenue/timeseries', {
+      params: { after, before, ...(channelId ? { channel_id: channelId } : {}) },
+    }).then((r) => r.data.data),
 
-  getByStore: (after: string, before: string) =>
-    apiClient.get<{ data: RevenueByStore[] }>('/revenue/by-store', { params: { after, before } }).then((r) => r.data.data),
+  getByStore: (after: string, before: string, channelId?: string) =>
+    apiClient.get<{ data: RevenueByStore[] }>('/revenue/by-store', {
+      params: { after, before, ...(channelId ? { channel_id: channelId } : {}) },
+    }).then((r) => r.data.data),
 
   getRoasReal: (after: string, before: string) =>
     apiClient.get<{ data: RoasRealRow[] }>('/revenue/roas-real', { params: { after, before } }).then((r) => r.data.data),

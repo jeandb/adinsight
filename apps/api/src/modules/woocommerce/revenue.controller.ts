@@ -40,7 +40,8 @@ export const revenueController = {
   async getTimeseries(req: Request, res: Response, next: NextFunction) {
     try {
       const { after, before } = parseDateRange(req.query)
-      const rows = await revenueRepository.getTimeseries(after, before)
+      const channelId = z.string().uuid().optional().parse(req.query.channel_id)
+      const rows = await revenueRepository.getTimeseries(after, before, channelId)
       res.json({ success: true, data: rows })
     } catch (err) { next(err) }
   },
@@ -48,7 +49,8 @@ export const revenueController = {
   async getByStore(req: Request, res: Response, next: NextFunction) {
     try {
       const { after, before } = parseDateRange(req.query)
-      const rows = await revenueRepository.getByStore(after, before)
+      const channelId = z.string().uuid().optional().parse(req.query.channel_id)
+      const rows = await revenueRepository.getByStore(after, before, channelId)
       res.json({
         success: true,
         data: rows.map((r) => ({

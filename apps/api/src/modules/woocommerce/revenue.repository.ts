@@ -50,7 +50,9 @@ export const revenueRepository = {
     return rows[0]
   },
 
-  async getTimeseries(after: string, before: string): Promise<RevenueTimeseriesRow[]> {
+  async getTimeseries(after: string, before: string, channelId?: string): Promise<RevenueTimeseriesRow[]> {
+    const params: string[] = [after, before]
+    const channelFilter = channelId ? `AND s.channel_id = $${params.push(channelId)}` : ''
     const { rows } = await db.query<RevenueTimeseriesRow>(
       `SELECT
          o.order_date::date::text  AS date,
@@ -62,14 +64,17 @@ export const revenueRepository = {
        WHERE o.order_date >= $1
          AND o.order_date <= $2
          AND o.status = 'completed'
+         ${channelFilter}
        GROUP BY o.order_date::date, s.id, s.type, s.name
        ORDER BY date ASC`,
-      [after, before],
+      params,
     )
     return rows
   },
 
-  async getByStore(after: string, before: string): Promise<RevenueByStoreRow[]> {
+  async getByStore(after: string, before: string, channelId?: string): Promise<RevenueByStoreRow[]> {
+    const params: string[] = [after, before]
+    const channelFilter = channelId ? `AND s.channel_id = $${params.push(channelId)}` : ''
     const { rows } = await db.query<RevenueByStoreRow>(
       `SELECT
          s.type::text              AS store_type,
@@ -80,9 +85,10 @@ export const revenueRepository = {
        WHERE o.order_date >= $1
          AND o.order_date <= $2
          AND o.status = 'completed'
+         ${channelFilter}
        GROUP BY s.id, s.type, s.name
        ORDER BY revenue_cents DESC`,
-      [after, before],
+      params,
     )
     return rows
   },

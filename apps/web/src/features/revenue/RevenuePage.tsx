@@ -5,6 +5,7 @@ import { DollarSign, ShoppingCart, Users, TrendingUp } from 'lucide-react'
 import type { PeriodKey } from '@/hooks/use-filters'
 import { revenueApi, type RevenueTimeseriesRow } from './revenue.api'
 import { wooStoresApi } from '@/features/admin/woo-stores/woo-stores.api'
+import { channelsApi } from '@/features/admin/channels/channels.api'
 import { ExportButton } from '@/features/admin/reports/ExportButton'
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
@@ -456,7 +457,15 @@ export function RevenuePage() {
     )
   }
 
+  const [channelId, setChannelId] = useState<string | undefined>(undefined)
+
   const { after, before } = resolveRevenuePeriod(period, dateFrom, dateTo)
+
+  const { data: channels = [] } = useQuery({
+    queryKey: ['channels'],
+    queryFn: () => channelsApi.list(),
+    staleTime: 10 * 60 * 1000,
+  })
 
   const { data: kpis, isLoading: kpisLoading } = useQuery({
     queryKey: ['revenue', 'kpis', period, dateFrom, dateTo],
@@ -465,14 +474,14 @@ export function RevenuePage() {
   })
 
   const { data: timeseries = [], isLoading: tsLoading } = useQuery({
-    queryKey: ['revenue', 'timeseries', period, dateFrom, dateTo],
-    queryFn: () => revenueApi.getTimeseries(after, before),
+    queryKey: ['revenue', 'timeseries', period, dateFrom, dateTo, channelId],
+    queryFn: () => revenueApi.getTimeseries(after, before, channelId),
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: byStore = [] } = useQuery({
-    queryKey: ['revenue', 'by-store', period, dateFrom, dateTo],
-    queryFn: () => revenueApi.getByStore(after, before),
+    queryKey: ['revenue', 'by-store', period, dateFrom, dateTo, channelId],
+    queryFn: () => revenueApi.getByStore(after, before, channelId),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -539,7 +548,21 @@ export function RevenuePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Timeseries */}
         <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
-          <p className="text-sm font-semibold text-foreground mb-4">Receita por loja</p>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <p className="text-sm font-semibold text-foreground">Receita por loja</p>
+            {channels.length > 0 && (
+              <select
+                value={channelId ?? ''}
+                onChange={(e) => setChannelId(e.target.value || undefined)}
+                className={SELECT_CLASS}
+              >
+                <option value="">Todos os canais</option>
+                {channels.map((ch) => (
+                  <option key={ch.id} value={ch.id}>{ch.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
           {tsLoading ? (
             <div className="h-56 bg-muted animate-pulse rounded-lg" />
           ) : (
