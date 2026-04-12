@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { DollarSign, ShoppingCart, Users, TrendingUp } from 'lucide-react'
 import type { PeriodKey } from '@/hooks/use-filters'
-import { revenueApi, type RevenueTimeseriesRow } from './revenue.api'
+import { revenueApi, type RevenueTimeseriesRow, type OrdersSummary } from './revenue.api'
 import { wooStoresApi } from '@/features/admin/woo-stores/woo-stores.api'
 import { channelsApi } from '@/features/admin/channels/channels.api'
 import { ExportButton } from '@/features/admin/reports/ExportButton'
@@ -328,6 +328,71 @@ function RoasRealSection({ after, before }: { after: string; before: string }) {
   )
 }
 
+// ─── Orders summary cards ─────────────────────────────────────────────────────
+
+function OrdersSummaryCards({ after, before }: { after: string; before: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['revenue', 'orders-summary', after, before],
+    queryFn: () => revenueApi.getOrdersSummary(after, before),
+    staleTime: 2 * 60 * 1000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[1, 2, 3, 4].map((i) => <div key={i} className="h-24 bg-muted animate-pulse rounded-xl" />)}
+      </div>
+    )
+  }
+
+  const d: OrdersSummary = data ?? {
+    completed:  { count: 0, totalCents: 0 },
+    processing: { count: 0 },
+    cancelled:  { count: 0, totalCents: 0, pct: 0 },
+    refunded:   { count: 0, totalCents: 0 },
+    totalOrders: 0,
+  }
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Completos */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-green-600">Completos</p>
+        <p className="text-xl font-bold text-foreground leading-none">{fmt.number(d.completed.count)}</p>
+        <p className="text-xs text-muted-foreground">{fmt.currency(d.completed.totalCents)}</p>
+      </div>
+
+      {/* Processando */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-blue-600">Processando</p>
+        <p className="text-xl font-bold text-foreground leading-none">{fmt.number(d.processing.count)}</p>
+        <p className="text-xs text-muted-foreground">pedidos pendentes</p>
+      </div>
+
+      {/* Cancelados */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-red-600">Cancelados</p>
+        <p className="text-xl font-bold text-foreground leading-none">{fmt.number(d.cancelled.count)}</p>
+        <p className="text-xs text-muted-foreground">
+          {fmt.currency(d.cancelled.totalCents)}
+          {d.totalOrders > 0 && (
+            <span className="ml-1 text-red-500">
+              ({(d.cancelled.pct * 100).toFixed(1)}%)
+            </span>
+          )}
+        </p>
+      </div>
+
+      {/* Reembolsados */}
+      <div className="bg-card border border-border rounded-xl p-4 space-y-1">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-orange-600">Reembolsados</p>
+        <p className="text-xl font-bold text-foreground leading-none">{fmt.number(d.refunded.count)}</p>
+        <p className="text-xs text-muted-foreground">{fmt.currency(d.refunded.totalCents)}</p>
+      </div>
+    </div>
+  )
+}
+
 // ─── Orders table ─────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
@@ -582,6 +647,9 @@ export function RevenuePage() {
         <p className="text-sm font-semibold text-foreground mb-3">ROAS Real por canal</p>
         <RoasRealSection after={after} before={before} />
       </div>
+
+      {/* Orders summary cards */}
+      <OrdersSummaryCards after={after} before={before} />
 
       {/* Orders */}
       <OrdersTable after={after} before={before} />

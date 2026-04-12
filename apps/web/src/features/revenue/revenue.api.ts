@@ -33,6 +33,14 @@ export interface RoasRealRow {
   roasReal: number | null
 }
 
+export interface OrdersSummary {
+  completed:  { count: number; totalCents: number }
+  processing: { count: number }
+  cancelled:  { count: number; totalCents: number; pct: number }
+  refunded:   { count: number; totalCents: number }
+  totalOrders: number
+}
+
 export const revenueApi = {
   getKpis: (after: string, before: string) =>
     apiClient.get<{ data: RevenueKpis }>('/revenue/kpis', { params: { after, before } }).then((r) => r.data.data),
@@ -49,4 +57,7 @@ export const revenueApi = {
 
   getRoasReal: (after: string, before: string) =>
     apiClient.get<{ data: RoasRealRow[] }>('/revenue/roas-real', { params: { after, before } }).then((r) => r.data.data),
+
+  getOrdersSummary: (after: string, before: string) =>
+    apiClient.get<{ data: OrdersSummary }>('/revenue/orders-summary', { params: { after, before } }).then((r) => r.data.data),
 }

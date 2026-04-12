@@ -62,6 +62,36 @@ export const revenueController = {
     } catch (err) { next(err) }
   },
 
+  async getOrdersSummary(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { after, before } = parseDateRange(req.query)
+      const rows = await revenueRepository.getOrdersSummary(after, before)
+
+      const totalOrders = rows.reduce((sum, r) => sum + parseInt(r.count, 10), 0)
+
+      const byStatus = Object.fromEntries(
+        rows.map((r) => [
+          r.status,
+          { count: parseInt(r.count, 10), totalCents: parseInt(r.total_cents, 10) },
+        ]),
+      )
+
+      const cancelled = byStatus['cancelled']?.count ?? 0
+      const cancelledPct = totalOrders > 0 ? cancelled / totalOrders : 0
+
+      res.json({
+        success: true,
+        data: {
+          completed:  { count: byStatus['completed']?.count  ?? 0, totalCents: byStatus['completed']?.totalCents  ?? 0 },
+          processing: { count: byStatus['processing']?.count ?? 0 },
+          cancelled:  { count: cancelled, totalCents: byStatus['cancelled']?.totalCents ?? 0, pct: cancelledPct },
+          refunded:   { count: byStatus['refunded']?.count   ?? 0, totalCents: byStatus['refunded']?.totalCents   ?? 0 },
+          totalOrders,
+        },
+      })
+    } catch (err) { next(err) }
+  },
+
   async getRoasReal(req: Request, res: Response, next: NextFunction) {
     try {
       const { after, before } = parseDateRange(req.query)

@@ -29,6 +29,12 @@ export interface RoasRealRow {
   spend_cents: string
 }
 
+export interface OrdersSummaryRow {
+  status: string
+  count: string
+  total_cents: string
+}
+
 export const revenueRepository = {
   async getKpis(after: string, before: string): Promise<RevenueKpisRow> {
     const periodDays = Math.ceil(
@@ -89,6 +95,21 @@ export const revenueRepository = {
        GROUP BY s.id, s.type, s.name
        ORDER BY revenue_cents DESC`,
       params,
+    )
+    return rows
+  },
+
+  async getOrdersSummary(after: string, before: string): Promise<OrdersSummaryRow[]> {
+    const { rows } = await db.query<OrdersSummaryRow>(
+      `SELECT
+         status::text                    AS status,
+         COUNT(*)::text                  AS count,
+         COALESCE(SUM(total_cents), 0)::text AS total_cents
+       FROM woo_orders
+       WHERE order_date >= $1
+         AND order_date <= $2
+       GROUP BY status`,
+      [after, before],
     )
     return rows
   },
