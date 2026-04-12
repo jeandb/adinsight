@@ -3,13 +3,14 @@
 Divisão do PRD em etapas ordenadas por dependência técnica.
 Cada etapa termina com um entregável visual testável.
 
-**Legenda:** ✅ Concluída · 🔄 Em andamento · ⏳ Pendente
+**Legenda:** ✅ Concluída — Fase 1 completa em Abril 2026
 
 ---
 
 ## Etapa 1 — Fundação do Monorepo + Autenticação ✅
 
 **Status:** Concluída — commit `a17ac66`
+**Concluída em:** 2026-03-30
 
 **O que foi construído:**
 - Monorepo pnpm workspaces (`apps/api`, `apps/web`, `packages/shared-types`)
@@ -45,6 +46,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 2 — Painel Admin: Usuários e Integrações de Plataforma ✅
 
 **Status:** Concluída — commits `4cc299b` / `53ec133`
+**Concluída em:** 2026-03-30
 
 **O que construir:**
 
@@ -74,6 +76,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 3 — Canais de Negócio ✅
 
 **Status:** Concluída — commit `0a95ff5`
+**Concluída em:** 2026-03-30
 
 **O que construir:**
 
@@ -95,6 +98,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 4 — Dashboard com Dados Seed ✅
 
 **Status:** Concluída — commit `7c3d3e0`
+**Concluída em:** 2026-03-30
 
 **O que construir:**
 
@@ -132,6 +136,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 5 — Integração Real com Plataformas de Anúncio ✅
 
 **Status:** Concluída — commit `be7ef49`
+**Concluída em:** 2026-03-30
 
 **O que construir:**
 
@@ -157,6 +162,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 6 — Associação de Campanhas a Canais ✅
 
 **Status:** Concluída — commit `be7ef49`
+**Concluída em:** 2026-03-30
 
 **O que construir:**
 
@@ -181,6 +187,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 7 — Alertas ✅
 
 **Status:** Concluída — commit `823caf8`
+**Concluída em:** 2026-03-30
 
 **O que foi construído:**
 
@@ -213,6 +220,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 8 — Integração WooCommerce (Faturamento) ✅
 
 **Status:** Concluída
+**Concluída em:** a verificar no git log
 
 **O que foi construído:**
 
@@ -250,6 +258,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 9 — Módulo de IA ✅
 
 **Status:** Concluída
+**Concluída em:** a verificar no git log
 
 **O que foi construído:**
 
@@ -283,6 +292,7 @@ Cada etapa termina com um entregável visual testável.
 ## Etapa 10 — Exportação e Relatórios Automáticos ✅
 
 **Status:** Concluída — commit `0e1f6fe`
+**Concluída em:** 2026-03-31
 
 **O que foi construído:**
 

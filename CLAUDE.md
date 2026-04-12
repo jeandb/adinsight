@@ -41,9 +41,10 @@ adinsight/
 │       ├── report-generator/
 │       ├── period-comparator/
 │       └── cross-data-analyst/
+├── PRD.md                           ← product requirements document
 ├── docs/
-│   ├── PRD_AdInsight_ProfJaqueMendes.md
-│   └── SPEC_AdInsight.md
+│   ├── ROADMAP.md
+│   └── stories/                     ← story files (currently empty)
 ├── docker-compose.yml               ← local dev: API + Web + PostgreSQL + Redis
 ├── docker-compose.prod.yml
 ├── package.json                     ← pnpm workspace root

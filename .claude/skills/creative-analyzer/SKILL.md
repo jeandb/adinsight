@@ -35,7 +35,7 @@ Assess whether the viewer's eye is guided naturally in the right order:
 - Is the text legible on a mobile screen (the primary device of this audience)?
 - Is the font large enough for feed viewing (minimum equivalent to 16px)?
 - Is there sufficient contrast between text and background? (especially white text on light backgrounds)
-- Is there too much text in the image? (Meta penalizes creatives with > 20% text coverage)
+- Is there too much text in the image? (heavy text-to-image ratio reduces organic reach on Meta)
 - Is the main text complete or will it be cropped by the format (Stories vs. Feed)?
 
 ### 3. Value Proposition Clarity
@@ -69,7 +69,7 @@ Check whether the creative speaks to teachers:
 
 ### 8. Platform Policy Compliance
 Check for common red flags:
-- Excessive text in image (Meta: 20% rule)
+- Excessive text in image — heavy text-to-image ratio reduces organic reach on Meta even without a formal threshold
 - Guaranteed result claims ("Earn R$5,000/month")
 - Content that could be interpreted as discriminatory or sensationalist
 - Use of third-party brand symbols without authorization

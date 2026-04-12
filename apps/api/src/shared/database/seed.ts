@@ -1,3 +1,19 @@
+/**
+ * DEVELOPMENT SEED — NOT PRODUCTION DATA
+ *
+ * Populates the database with synthetic campaign data for local
+ * development and demo purposes. Never run in production.
+ *
+ * Run with: pnpm --filter api db:seed
+ *
+ * Creates:
+ *   - 5 business channels (matching production channel names)
+ *   - 20 synthetic campaigns across META, GOOGLE, TIKTOK, PINTEREST
+ *   - 90 days of generated metric_snapshots per campaign (~1,800 rows)
+ *
+ * Campaign names follow the [PLATFORM | Channel | Objective] convention.
+ * These are NOT real campaigns. All have external_id prefixed with "seed_".
+ */
 import 'dotenv/config'
 import { db } from './client'
 

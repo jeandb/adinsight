@@ -8,9 +8,9 @@
 | **Produto** | AdInsight — Dashboard de Campanhas |
 | **Empresa** | Prof Jaque Mendes |
 | **Fase** | 1 de N (SaaS Interno) |
-| **Status** | Em Especificação |
-| **Versão** | 1.7 |
-| **Data** | Junho 2025 |
+| **Status** | Em Produção |
+| **Versão** | 1.8 |
+| **Data** | Abril 2026 |
 | **Responsável** | Equipe de Tecnologia / Prof Jaque Mendes |
 
 ---
@@ -56,8 +56,6 @@ Entregar um painel web centralizado que permita à equipe de gestão de tráfego
 
 ### 1.3 Fora do Escopo (Fase 1)
 
-- Integração com plataformas de e-commerce (WooCommerce, YITH)
-- Módulo financeiro ou de vendas
 - Gestão de conteúdo orgânico / social listening
 - CRM ou gestão de leads/clientes
 - Funcionalidades para múltiplos clientes externos (uso somente interno)
@@ -1052,9 +1050,9 @@ adinsight/                               ← raiz do repositório Git
 │       │   └── index.ts
 │       └── package.json
 │
+├── PRD.md                               ← este documento
 ├── docs/
-│   ├── PRD_AdInsight_ProfJaqueMendes.md ← este documento
-│   └── SPEC_AdInsight.md               ← especificação técnica detalhada
+│   └── ROADMAP.md                      ← divisão em etapas de implementação
 │
 ├── docker-compose.yml                   ← sobe API + Web + PostgreSQL + Redis
 ├── docker-compose.prod.yml

@@ -27,6 +27,8 @@ overlooking real signals.
 This is the demand behavior calendar for Prof Jaque Mendes's products.
 Always reference this when interpreting period-over-period variations:
 
+> Este calendário reflete padrões observados no nicho pedagógico brasileiro. Trate-o como hipótese de partida — valide sempre contra os dados reais de cada análise.
+
 ### Annual Calendar
 
 | Period | Months | Demand | What to expect |
