@@ -35,11 +35,11 @@ function formatValue(metric: MetricKey, value: number): string {
 interface LineChartProps {
   data: TimeseriesPoint[]
   metric: MetricKey
+  hoveredIndex: number | null
+  onHoverChange: (index: number | null) => void
 }
 
-function SimpleLineChart({ data, metric }: LineChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-
+function SimpleLineChart({ data, metric, hoveredIndex, onHoverChange }: LineChartProps) {
   if (!data.length) {
     return (
       <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
@@ -114,8 +114,8 @@ function SimpleLineChart({ data, metric }: LineChartProps) {
             fill="hsl(var(--primary))"
             vectorEffect="non-scaling-stroke"
             className="opacity-0 hover:opacity-100 cursor-pointer transition-opacity"
-            onMouseEnter={() => setHoveredIndex(i)}
-            onMouseLeave={() => setHoveredIndex(null)}
+            onMouseEnter={() => onHoverChange(i)}
+            onMouseLeave={() => onHoverChange(null)}
           />
         ))}
 
@@ -136,7 +136,7 @@ function SimpleLineChart({ data, metric }: LineChartProps) {
       {/* Tooltip */}
       {hoveredIndex !== null && (
         <div
-          className="absolute pointer-events-none z-10 bg-popover border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-md"
+          className="absolute z-10 bg-popover border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-md"
           style={{
             left: `${(points[hoveredIndex].x / chartWidth) * 100}%`,
             top: `${(points[hoveredIndex].y / chartHeight) * 100}%`,
@@ -171,6 +171,7 @@ function SimpleLineChart({ data, metric }: LineChartProps) {
 
 export function TimeseriesSection({ filters }: TimeseriesSectionProps) {
   const [metric, setMetric] = useState<MetricKey>('spend')
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['dashboard', 'timeseries', filters, metric],
@@ -206,7 +207,12 @@ export function TimeseriesSection({ filters }: TimeseriesSectionProps) {
           Não foi possível carregar os dados. Tente novamente.
         </div>
       ) : (
-        <SimpleLineChart data={data} metric={metric} />
+        <SimpleLineChart
+          data={data}
+          metric={metric}
+          hoveredIndex={hoveredIndex}
+          onHoverChange={setHoveredIndex}
+        />
       )}
     </div>
   )
