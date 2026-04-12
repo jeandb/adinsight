@@ -1,6 +1,8 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { DollarSign, ShoppingCart, Users, TrendingUp } from 'lucide-react'
+import type { PeriodKey } from '@/hooks/use-filters'
 import { revenueApi, type RevenueTimeseriesRow } from './revenue.api'
 import { wooStoresApi } from '@/features/admin/woo-stores/woo-stores.api'
 import { ExportButton } from '@/features/admin/reports/ExportButton'
@@ -19,18 +21,48 @@ const fmt = {
 
 // ─── Period helpers ───────────────────────────────────────────────────────────
 
-const PERIODS = [
-  { label: '7d',   days: 7 },
-  { label: '30d',  days: 30 },
-  { label: '90d',  days: 90 },
-] as const
+const PERIOD_LABELS: Record<PeriodKey, string> = {
+  last_7d:    'Últimos 7 dias',
+  last_14d:   'Últimos 14 dias',
+  last_30d:   'Últimos 30 dias',
+  this_month: 'Este mês',
+  last_month: 'Mês anterior',
+  custom:     'Período personalizado',
+}
 
-type PeriodDays = 7 | 30 | 90
+const SELECT_CLASS =
+  'px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer'
+const DATE_INPUT_CLASS =
+  'px-3 py-1.5 rounded-lg border border-input bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring cursor-pointer'
 
-function getRange(days: PeriodDays): { after: string; before: string } {
-  const before = new Date()
-  const after  = new Date(Date.now() - days * 86_400_000)
-  return { after: after.toISOString(), before: before.toISOString() }
+function resolveRevenuePeriod(
+  period: PeriodKey,
+  dateFrom?: string,
+  dateTo?: string,
+): { after: string; before: string } {
+  const now = new Date()
+  const today = now.toISOString()
+
+  if (period === 'custom' && dateFrom && dateTo) {
+    return {
+      after:  new Date(dateFrom).toISOString(),
+      before: new Date(dateTo + 'T23:59:59').toISOString(),
+    }
+  }
+  if (period === 'this_month') {
+    const from = new Date(now.getFullYear(), now.getMonth(), 1)
+    return { after: from.toISOString(), before: today }
+  }
+  if (period === 'last_month') {
+    const from = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const to   = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59)
+    return { after: from.toISOString(), before: to.toISOString() }
+  }
+  const days = period === 'last_7d' ? 7 : period === 'last_14d' ? 14 : 30
+  return {
+    after:  new Date(Date.now() - days * 86_400_000).toISOString(),
+    before: today,
+  }
 }
 
 // ─── Store colors (matches WooStoresPage) ─────────────────────────────────────
@@ -395,23 +427,51 @@ function OrdersTable({ after, before }: { after: string; before: string }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export function RevenuePage() {
-  const [period, setPeriod] = useState<PeriodDays>(30)
-  const { after, before } = useMemo(() => getRange(period), [period])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const period   = (searchParams.get('period') as PeriodKey) ?? 'last_30d'
+  const dateFrom = searchParams.get('date_from') ?? undefined
+  const dateTo   = searchParams.get('date_to')   ?? undefined
+
+  function setPeriodParam(key: PeriodKey) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('period', key)
+        if (key !== 'custom') { next.delete('date_from'); next.delete('date_to') }
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  function setDateParam(key: 'date_from' | 'date_to', value: string | undefined) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (!value) next.delete(key)
+        else next.set(key, value)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const { after, before } = resolveRevenuePeriod(period, dateFrom, dateTo)
 
   const { data: kpis, isLoading: kpisLoading } = useQuery({
-    queryKey: ['revenue', 'kpis', after, before],
+    queryKey: ['revenue', 'kpis', period, dateFrom, dateTo],
     queryFn: () => revenueApi.getKpis(after, before),
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: timeseries = [], isLoading: tsLoading } = useQuery({
-    queryKey: ['revenue', 'timeseries', after, before],
+    queryKey: ['revenue', 'timeseries', period, dateFrom, dateTo],
     queryFn: () => revenueApi.getTimeseries(after, before),
     staleTime: 5 * 60 * 1000,
   })
 
   const { data: byStore = [] } = useQuery({
-    queryKey: ['revenue', 'by-store', after, before],
+    queryKey: ['revenue', 'by-store', period, dateFrom, dateTo],
     queryFn: () => revenueApi.getByStore(after, before),
     staleTime: 5 * 60 * 1000,
   })
@@ -419,30 +479,45 @@ export function RevenuePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-2.5">
           <DollarSign className="w-5 h-5 text-muted-foreground" />
           <h1 className="text-xl font-semibold text-foreground">Faturamento</h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <ExportButton scope="revenue" from={after.slice(0, 10)} to={before.slice(0, 10)} />
           {/* Period selector */}
-          <div className="flex gap-1 bg-muted rounded-lg p-1">
-          {PERIODS.map(({ label, days }) => (
-            <button
-              key={days}
-              onClick={() => setPeriod(days)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                period === days
-                  ? 'bg-card text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-          </div>
+          <select
+            value={period}
+            onChange={(e) => setPeriodParam(e.target.value as PeriodKey)}
+            className={SELECT_CLASS}
+          >
+            {(Object.keys(PERIOD_LABELS) as PeriodKey[]).map((key) => (
+              <option key={key} value={key}>{PERIOD_LABELS[key]}</option>
+            ))}
+          </select>
+
+          {period === 'custom' && (
+            <>
+              <input
+                type="date"
+                value={dateFrom ?? ''}
+                max={dateTo ?? new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setDateParam('date_from', e.target.value || undefined)}
+                className={DATE_INPUT_CLASS}
+              />
+              <span className="text-sm text-muted-foreground">até</span>
+              <input
+                type="date"
+                value={dateTo ?? ''}
+                min={dateFrom}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={(e) => setDateParam('date_to', e.target.value || undefined)}
+                className={DATE_INPUT_CLASS}
+              />
+            </>
+          )}
         </div>
       </div>
 
