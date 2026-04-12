@@ -5,6 +5,7 @@ import {
   Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff, Pencil,
 } from 'lucide-react'
 import { wooStoresApi, type WooStore, type WooSourceType } from './woo-stores.api'
+import { channelsApi } from '@/features/admin/channels/channels.api'
 
 
 // ─── Status config ────────────────────────────────────────────────────────────
@@ -144,12 +145,20 @@ function EditStoreModal({ store, onClose }: { store: WooStore; onClose: () => vo
   const [name,       setName]       = useState(store.name)
   const [url,        setUrl]        = useState(store.url ?? '')
   const [sourceType, setSourceType] = useState<WooSourceType>(store.sourceType)
+  const [channelId,  setChannelId]  = useState<string | null>(store.channelId)
+
+  const { data: channels = [] } = useQuery({
+    queryKey: ['channels'],
+    queryFn: () => channelsApi.list(),
+    staleTime: 10 * 60 * 1000,
+  })
 
   const update = useMutation({
     mutationFn: () => wooStoresApi.updateStore(store.id, {
       name,
       url: url.trim() || null,
       sourceType,
+      channelId,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['woo-stores'] })
@@ -220,6 +229,20 @@ function EditStoreModal({ store, onClose }: { store: WooStore; onClose: () => vo
               />
             </div>
           )}
+
+          <div>
+            <label className={labelCls}>Canal de negócio</label>
+            <select
+              value={channelId ?? ''}
+              onChange={(e) => setChannelId(e.target.value || null)}
+              className={inputCls}
+            >
+              <option value="">Sem canal associado</option>
+              {channels.map((ch) => (
+                <option key={ch.id} value={ch.id}>{ch.name}</option>
+              ))}
+            </select>
+          </div>
 
           {update.isError && (
             <p className="text-xs text-destructive">{(update.error as Error).message}</p>

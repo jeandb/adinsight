@@ -31,6 +31,7 @@ export const wooStoresController = {
         name:       z.string().min(1).max(120).optional(),
         url:        z.string().url().nullable().optional(),
         sourceType: z.enum(['woocommerce', 'manual']).optional(),
+        channelId:  z.string().uuid().nullable().optional(),
       }).parse(req.body)
       res.json({ success: true, data: await wooStoresService.updateStore(id, input) })
     } catch (err) { next(err) }

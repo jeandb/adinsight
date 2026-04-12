@@ -52,19 +52,22 @@ export const wooStoresRepository = {
 
   async updateStore(
     id: string,
-    input: { name?: string; url?: string | null; sourceType?: WooSourceType },
+    input: { name?: string; url?: string | null; sourceType?: WooSourceType; channelId?: string | null },
   ): Promise<WooStoreRow> {
     const { rows } = await db.query<WooStoreRow>(
       `UPDATE woo_stores
        SET name        = COALESCE($1, name),
            url         = CASE WHEN $2::text IS DISTINCT FROM '__UNCHANGED__' THEN $2::text ELSE url END,
-           source_type = COALESCE($3, source_type)
-       WHERE id = $4
+           source_type = COALESCE($3, source_type),
+           channel_id  = CASE WHEN $5::boolean THEN $4::uuid ELSE channel_id END
+       WHERE id = $6
        RETURNING *`,
       [
         input.name ?? null,
         input.url !== undefined ? (input.url ?? null) : '__UNCHANGED__',
         input.sourceType ?? null,
+        input.channelId ?? null,
+        input.channelId !== undefined,
         id,
       ],
     )

@@ -35,7 +35,7 @@ export const wooStoresService = {
     return sanitizeStore(row)
   },
 
-  async updateStore(id: string, input: { name?: string; url?: string | null; sourceType?: import('./woo-stores.types').WooSourceType }) {
+  async updateStore(id: string, input: { name?: string; url?: string | null; sourceType?: import('./woo-stores.types').WooSourceType; channelId?: string | null }) {
     const store = await wooStoresRepository.findById(id)
     if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
     const row = await wooStoresRepository.updateStore(id, input)
