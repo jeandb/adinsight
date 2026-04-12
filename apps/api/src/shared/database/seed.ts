@@ -15,6 +15,13 @@
  * These are NOT real campaigns. All have external_id prefixed with "seed_".
  */
 import 'dotenv/config'
+
+if (process.env.NODE_ENV !== 'development') {
+  console.error('❌ db:seed bloqueado: só pode rodar com NODE_ENV=development.')
+  console.error(`   NODE_ENV atual: "${process.env.NODE_ENV ?? 'undefined'}"`)
+  process.exit(1)
+}
+
 import { db } from './client'
 
 // ── Channels ─────────────────────────────────────────────────────────────────
