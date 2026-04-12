@@ -76,12 +76,30 @@ function SimpleLineChart({ data, metric, hoveredIndex, onHoverChange }: LineChar
     ` L ${points[points.length - 1].x} ${chartHeight - paddingY}` +
     ` L ${points[0].x} ${chartHeight - paddingY} Z`
 
+  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const relX = (e.clientX - rect.left) / rect.width
+    const svgX = paddingX + relX * (chartWidth - paddingX * 2)
+    let nearest = 0
+    let minDist = Infinity
+    points.forEach((p, i) => {
+      const dist = Math.abs(p.x - svgX)
+      if (dist < minDist) {
+        minDist = dist
+        nearest = i
+      }
+    })
+    onHoverChange(nearest)
+  }
+
   return (
     <div className="relative h-64 select-none">
       <svg
         viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-        className="w-full h-full overflow-visible"
+        className="w-full h-full overflow-visible cursor-crosshair"
         preserveAspectRatio="none"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => onHoverChange(null)}
       >
         <defs>
           <linearGradient id="chart-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -89,6 +107,9 @@ function SimpleLineChart({ data, metric, hoveredIndex, onHoverChange }: LineChar
             <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
           </linearGradient>
         </defs>
+
+        {/* Transparent overlay ensures mouse events fire across the full chart area */}
+        <rect x="0" y="0" width={chartWidth} height={chartHeight} fill="transparent" />
 
         {/* Area fill */}
         <path d={areaD} fill="url(#chart-gradient)" />
@@ -104,39 +125,26 @@ function SimpleLineChart({ data, metric, hoveredIndex, onHoverChange }: LineChar
           vectorEffect="non-scaling-stroke"
         />
 
-        {/* Hover dots */}
+        {/* Dots — visible only for active point */}
         {points.map((p, i) => (
           <circle
             key={i}
             cx={p.x}
             cy={p.y}
-            r="1.5"
+            r={hoveredIndex === i ? 2 : 1.5}
             fill="hsl(var(--primary))"
-            vectorEffect="non-scaling-stroke"
-            className="opacity-0 hover:opacity-100 cursor-pointer transition-opacity"
-            onMouseEnter={() => onHoverChange(i)}
-            onMouseLeave={() => onHoverChange(null)}
-          />
-        ))}
-
-        {/* Active dot */}
-        {hoveredIndex !== null && (
-          <circle
-            cx={points[hoveredIndex].x}
-            cy={points[hoveredIndex].y}
-            r="2"
-            fill="hsl(var(--primary))"
-            stroke="hsl(var(--background))"
+            stroke={hoveredIndex === i ? 'hsl(var(--background))' : 'none'}
             strokeWidth="0.8"
             vectorEffect="non-scaling-stroke"
+            className={hoveredIndex === i ? 'opacity-100' : 'opacity-0'}
           />
-        )}
+        ))}
       </svg>
 
-      {/* Tooltip */}
+      {/* Tooltip — pointer-events-none so it doesn't intercept SVG mouse events */}
       {hoveredIndex !== null && (
         <div
-          className="absolute z-10 bg-popover border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-md"
+          className="absolute pointer-events-none z-10 bg-popover border border-border rounded-lg px-2.5 py-1.5 text-xs shadow-md"
           style={{
             left: `${(points[hoveredIndex].x / chartWidth) * 100}%`,
             top: `${(points[hoveredIndex].y / chartHeight) * 100}%`,
