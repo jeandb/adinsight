@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { DollarSign, ShoppingCart, Users, TrendingUp } from 'lucide-react'
+import { DollarSign, ShoppingCart, Users, TrendingUp, BadgeCheck, Percent } from 'lucide-react'
 import type { PeriodKey } from '@/hooks/use-filters'
-import { revenueApi, type RevenueTimeseriesRow, type OrdersSummary } from './revenue.api'
-import { wooStoresApi } from '@/features/admin/woo-stores/woo-stores.api'
+import { revenueApi, type RevenueTimeseriesRow, type OrdersSummary, type OrdersMetrics } from './revenue.api'
 import { channelsApi } from '@/features/admin/channels/channels.api'
 import { ExportButton } from '@/features/admin/reports/ExportButton'
 
@@ -324,6 +323,53 @@ function RoasRealSection({ after, before }: { after: string; before: string }) {
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+// ─── Orders metrics cards (with period comparison) ───────────────────────────
+
+function OrdersMetricsCards({ after, before }: { after: string; before: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['revenue', 'orders-metrics', after, before],
+    queryFn: () => revenueApi.getOrdersMetrics(after, before),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {[1, 2, 3].map((i) => <div key={i} className="h-28 bg-muted animate-pulse rounded-xl" />)}
+      </div>
+    )
+  }
+
+  const d: OrdersMetrics = data ?? {
+    netRevenue:      { valueCents: 0, growth: null },
+    completionRate:  { value: 0,      growth: null },
+    uniqueCustomers: { value: 0,      growth: null },
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <KpiCard
+        icon={DollarSign}
+        label="Receita Líquida"
+        value={fmt.currency(d.netRevenue.valueCents)}
+        growth={d.netRevenue.growth}
+      />
+      <KpiCard
+        icon={Percent}
+        label="Taxa de conclusão"
+        value={`${(d.completionRate.value * 100).toFixed(1)}%`}
+        growth={d.completionRate.growth}
+      />
+      <KpiCard
+        icon={BadgeCheck}
+        label="Clientes únicos"
+        value={fmt.number(d.uniqueCustomers.value)}
+        growth={d.uniqueCustomers.growth}
+      />
     </div>
   )
 }
@@ -651,8 +697,8 @@ export function RevenuePage() {
       {/* Orders summary cards */}
       <OrdersSummaryCards after={after} before={before} />
 
-      {/* Orders */}
-      <OrdersTable after={after} before={before} />
+      {/* Orders metrics with period comparison */}
+      <OrdersMetricsCards after={after} before={before} />
     </div>
   )
 }

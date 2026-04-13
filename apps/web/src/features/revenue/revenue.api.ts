@@ -33,6 +33,12 @@ export interface RoasRealRow {
   roasReal: number | null
 }
 
+export interface OrdersMetrics {
+  netRevenue:      { valueCents: number; growth: number | null }
+  completionRate:  { value: number;      growth: number | null }
+  uniqueCustomers: { value: number;      growth: number | null }
+}
+
 export interface OrdersSummary {
   completed:  { count: number; totalCents: number }
   processing: { count: number }
@@ -60,4 +66,7 @@ export const revenueApi = {
 
   getOrdersSummary: (after: string, before: string) =>
     apiClient.get<{ data: OrdersSummary }>('/revenue/orders-summary', { params: { after, before } }).then((r) => r.data.data),
+
+  getOrdersMetrics: (after: string, before: string) =>
+    apiClient.get<{ data: OrdersMetrics }>('/revenue/orders-metrics', { params: { after, before } }).then((r) => r.data.data),
 }

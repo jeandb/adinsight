@@ -62,6 +62,48 @@ export const revenueController = {
     } catch (err) { next(err) }
   },
 
+  async getOrdersMetrics(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { after, before } = parseDateRange(req.query)
+      const r = await revenueRepository.getOrdersMetrics(after, before)
+
+      const completedCents     = parseInt(r.completed_cents, 10)
+      const prevCompletedCents = parseInt(r.prev_completed_cents, 10)
+      const refundedCents      = parseInt(r.refunded_cents, 10)
+      const prevRefundedCents  = parseInt(r.prev_refunded_cents, 10)
+
+      const netRevenue     = completedCents - refundedCents
+      const prevNetRevenue = prevCompletedCents - prevRefundedCents
+
+      const completed     = parseInt(r.completed, 10)
+      const prevCompleted = parseInt(r.prev_completed, 10)
+      const processing    = parseInt(r.processing, 10)
+      const prevProcessing = parseInt(r.prev_processing, 10)
+      const totalOrders    = parseInt(r.total_orders, 10)
+      const prevTotalOrders = parseInt(r.prev_total_orders, 10)
+
+      const denominator     = totalOrders - processing
+      const prevDenominator = prevTotalOrders - prevProcessing
+      const completionRate     = denominator > 0     ? completed / denominator         : 0
+      const prevCompletionRate = prevDenominator > 0 ? prevCompleted / prevDenominator : 0
+
+      const uniqueCustomers     = parseInt(r.unique_customers, 10)
+      const prevUniqueCustomers = parseInt(r.prev_unique_customers, 10)
+
+      const growth = (curr: number, prev: number): number | null =>
+        prev > 0 ? (curr - prev) / prev : null
+
+      res.json({
+        success: true,
+        data: {
+          netRevenue:          { valueCents: netRevenue,      growth: growth(netRevenue, prevNetRevenue) },
+          completionRate:      { value: completionRate,       growth: growth(completionRate, prevCompletionRate) },
+          uniqueCustomers:     { value: uniqueCustomers,      growth: growth(uniqueCustomers, prevUniqueCustomers) },
+        },
+      })
+    } catch (err) { next(err) }
+  },
+
   async getOrdersSummary(req: Request, res: Response, next: NextFunction) {
     try {
       const { after, before } = parseDateRange(req.query)

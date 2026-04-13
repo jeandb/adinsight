@@ -35,6 +35,21 @@ export interface OrdersSummaryRow {
   total_cents: string
 }
 
+export interface OrdersMetricsRow {
+  unique_customers:     string
+  prev_unique_customers: string
+  total_orders:         string
+  prev_total_orders:    string
+  completed:            string
+  prev_completed:       string
+  processing:           string
+  prev_processing:      string
+  completed_cents:      string
+  prev_completed_cents: string
+  refunded_cents:       string
+  prev_refunded_cents:  string
+}
+
 export const revenueRepository = {
   async getKpis(after: string, before: string): Promise<RevenueKpisRow> {
     const periodDays = Math.ceil(
@@ -97,6 +112,34 @@ export const revenueRepository = {
       params,
     )
     return rows
+  },
+
+  async getOrdersMetrics(after: string, before: string): Promise<OrdersMetricsRow> {
+    const periodDays = Math.ceil(
+      (new Date(before).getTime() - new Date(after).getTime()) / 86_400_000,
+    )
+    const prevBefore = after
+    const prevAfter  = new Date(new Date(after).getTime() - periodDays * 86_400_000).toISOString()
+
+    const { rows } = await db.query<OrdersMetricsRow>(
+      `SELECT
+         COUNT(DISTINCT CASE WHEN order_date >= $1 AND order_date <= $2 THEN customer_email END)::text AS unique_customers,
+         COUNT(DISTINCT CASE WHEN order_date >= $3 AND order_date <  $4 THEN customer_email END)::text AS prev_unique_customers,
+         COUNT(CASE WHEN order_date >= $1 AND order_date <= $2 THEN 1 END)::text                       AS total_orders,
+         COUNT(CASE WHEN order_date >= $3 AND order_date <  $4 THEN 1 END)::text                       AS prev_total_orders,
+         COUNT(CASE WHEN order_date >= $1 AND order_date <= $2 AND status = 'completed'  THEN 1 END)::text AS completed,
+         COUNT(CASE WHEN order_date >= $3 AND order_date <  $4 AND status = 'completed'  THEN 1 END)::text AS prev_completed,
+         COUNT(CASE WHEN order_date >= $1 AND order_date <= $2 AND status = 'processing' THEN 1 END)::text AS processing,
+         COUNT(CASE WHEN order_date >= $3 AND order_date <  $4 AND status = 'processing' THEN 1 END)::text AS prev_processing,
+         COALESCE(SUM(CASE WHEN order_date >= $1 AND order_date <= $2 AND status = 'completed' THEN total_cents END), 0)::text AS completed_cents,
+         COALESCE(SUM(CASE WHEN order_date >= $3 AND order_date <  $4 AND status = 'completed' THEN total_cents END), 0)::text AS prev_completed_cents,
+         COALESCE(SUM(CASE WHEN order_date >= $1 AND order_date <= $2 AND status = 'refunded'  THEN total_cents END), 0)::text AS refunded_cents,
+         COALESCE(SUM(CASE WHEN order_date >= $3 AND order_date <  $4 AND status = 'refunded'  THEN total_cents END), 0)::text AS prev_refunded_cents
+       FROM woo_orders
+       WHERE order_date >= $3 AND order_date <= $2`,
+      [after, before, prevAfter, prevBefore],
+    )
+    return rows[0]
   },
 
   async getOrdersSummary(after: string, before: string): Promise<OrdersSummaryRow[]> {

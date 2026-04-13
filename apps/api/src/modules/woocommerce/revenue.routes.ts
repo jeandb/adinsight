@@ -15,6 +15,9 @@ router.get('/timeseries', revenueController.getTimeseries)
 // GET /api/revenue/by-store
 router.get('/by-store', revenueController.getByStore)
 
+// GET /api/revenue/orders-metrics
+router.get('/orders-metrics', revenueController.getOrdersMetrics)
+
 // GET /api/revenue/orders-summary
 router.get('/orders-summary', revenueController.getOrdersSummary)
 
