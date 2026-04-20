@@ -1,10 +1,14 @@
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 
 export function PrivacyPolicyPage() {
+  useEffect(() => {
+    document.title = 'Política de Privacidade — AdInsight'
+    return () => { document.title = 'AdInsight' }
+  }, [])
+
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <title>Política de Privacidade — AdInsight</title>
-
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-8">
           <Link

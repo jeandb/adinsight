@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom'
 import { LoginPage } from './features/auth/LoginPage'
 import { SetupPage } from './features/auth/SetupPage'
 import { ActivatePage } from './features/auth/ActivatePage'
@@ -84,15 +84,26 @@ function BootstrapCheck({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function BootstrappedLayout() {
+  return (
+    <BootstrapCheck>
+      <Outlet />
+    </BootstrapCheck>
+  )
+}
+
 export function Router() {
   return (
     <BrowserRouter>
-      <BootstrapCheck>
-        <Routes>
+      <Routes>
+        {/* Public — no bootstrap check */}
+        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+
+        {/* All other routes go through BootstrapCheck */}
+        <Route element={<BootstrappedLayout />}>
           <Route path="/setup" element={<SetupGuard />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/activate" element={<ActivatePage />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
           <Route
             element={
@@ -174,8 +185,8 @@ export function Router() {
           </Route>
 
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </BootstrapCheck>
+        </Route>
+      </Routes>
     </BrowserRouter>
   )
 }
