@@ -12,7 +12,7 @@ RUN pnpm install --frozen-lockfile
 # ── Layer 2: build ────────────────────────────────────────────────────────────
 FROM deps AS builder
 # VITE_* vars must be set at build time — they are baked into the static bundle
-ARG VITE_API_URL=http://localhost:3000
+ARG VITE_API_URL=https://adinsightapi.jaquemendes.com
 ENV VITE_API_URL=${VITE_API_URL}
 COPY packages/shared-types/ ./packages/shared-types/
 COPY apps/web/ ./apps/web/
