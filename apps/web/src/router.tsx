@@ -14,6 +14,7 @@ import { AiProvidersPage } from './features/admin/ai-providers/AiProvidersPage'
 import { ReportsPage } from './features/admin/reports/ReportsPage'
 import { RevenuePage } from './features/revenue/RevenuePage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
+import { PrivacyPolicyPage } from './features/legal/PrivacyPolicyPage'
 import { useAuthStore } from './stores/auth.store'
 import { authApi } from './features/auth/auth.api'
 import { UserRole } from '@adinsight/shared-types'
@@ -91,6 +92,7 @@ export function Router() {
           <Route path="/setup" element={<SetupGuard />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/activate" element={<ActivatePage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
           <Route
             element={

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { authApi } from './auth.api'
 import { useAuthStore } from '@/stores/auth.store'
 
@@ -82,7 +82,10 @@ export function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
-          AdInsight · Prof Jaque Mendes · Uso interno
+          AdInsight · Prof Jaque Mendes · Uso interno ·{' '}
+          <Link to="/privacy-policy" className="underline underline-offset-2 hover:text-foreground transition-colors">
+            Política de Privacidade
+          </Link>
         </p>
       </div>
     </div>
