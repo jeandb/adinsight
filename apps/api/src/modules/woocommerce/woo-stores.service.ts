@@ -2,10 +2,12 @@ import { AppError } from '../../shared/middleware/error.middleware'
 import { encrypt, decrypt, mask } from '../../shared/crypto'
 import { wooStoresRepository } from './woo-stores.repository'
 import { testWooConnection, syncOrders, syncSubscriptions } from './woo.adapter'
+import { testKiwifyConnection, syncKiwifyOrders } from './kiwify.adapter'
 import { parseFileToOrders } from './revenue.importer'
-import type { WooStoreRow, CreateStoreInput, SaveCredentialsInput } from './woo-stores.types'
+import type { WooStoreRow, CreateStoreInput, SaveCredentialsInput, SaveKiwifyCredentialsInput } from './woo-stores.types'
 
 function sanitizeStore(row: WooStoreRow) {
+  const isKiwify = row.source_type === 'kiwify'
   return {
     id:                row.id,
     name:              row.name,
@@ -17,7 +19,9 @@ function sanitizeStore(row: WooStoreRow) {
     status:            row.status,
     lastError:         row.last_error,
     lastSyncAt:        row.last_sync_at,
-    hasCredentials:    !!(row.consumer_key_encrypted && row.consumer_secret_encrypted),
+    hasCredentials:    isKiwify
+      ? !!(row.kiwify_client_id_encrypted && row.kiwify_client_secret_encrypted && row.kiwify_account_id_encrypted)
+      : !!(row.consumer_key_encrypted && row.consumer_secret_encrypted),
     consumerKeyMasked: row.consumer_key_encrypted ? mask(row.consumer_key_encrypted) : null,
     createdAt:         row.created_at,
     updatedAt:         row.updated_at,
@@ -61,17 +65,29 @@ export const wooStoresService = {
   async testConnection(id: string) {
     const store = await wooStoresRepository.findById(id)
     if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
-    if (!store.consumer_key_encrypted || !store.consumer_secret_encrypted) {
-      throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais não configuradas')
+
+    let result: { ok: boolean; error?: string }
+
+    if (store.source_type === 'kiwify') {
+      if (!store.kiwify_client_id_encrypted || !store.kiwify_client_secret_encrypted || !store.kiwify_account_id_encrypted) {
+        throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais Kiwify não configuradas')
+      }
+      result = await testKiwifyConnection({
+        clientId:     decrypt(store.kiwify_client_id_encrypted),
+        clientSecret: decrypt(store.kiwify_client_secret_encrypted),
+        accountId:    decrypt(store.kiwify_account_id_encrypted),
+      })
+    } else {
+      if (!store.consumer_key_encrypted || !store.consumer_secret_encrypted) {
+        throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais não configuradas')
+      }
+      result = await testWooConnection({
+        url:            store.url!,
+        consumerKey:    decrypt(store.consumer_key_encrypted),
+        consumerSecret: decrypt(store.consumer_secret_encrypted),
+      })
     }
 
-    const creds = {
-      url:            store.url!,
-      consumerKey:    decrypt(store.consumer_key_encrypted),
-      consumerSecret: decrypt(store.consumer_secret_encrypted),
-    }
-
-    const result = await testWooConnection(creds)
     await wooStoresRepository.updateStatus(id, result.ok ? 'ACTIVE' : 'ERROR', result.error)
     return result
   },
@@ -79,9 +95,26 @@ export const wooStoresService = {
   async syncStore(id: string, daysBack = 30) {
     const store = await wooStoresRepository.findById(id)
     if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
-    if (store.source_type !== 'woocommerce') {
+
+    if (store.source_type === 'manual') {
       throw new AppError(422, 'INVALID_SOURCE', 'Lojas manuais não suportam sync via API')
     }
+
+    if (store.source_type === 'kiwify') {
+      if (!store.kiwify_client_id_encrypted || !store.kiwify_client_secret_encrypted || !store.kiwify_account_id_encrypted) {
+        throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais Kiwify não configuradas')
+      }
+      const orders = await syncKiwifyOrders({
+        clientId:     decrypt(store.kiwify_client_id_encrypted),
+        clientSecret: decrypt(store.kiwify_client_secret_encrypted),
+        accountId:    decrypt(store.kiwify_account_id_encrypted),
+      })
+      await wooStoresRepository.upsertOrders(store.id, orders)
+      await wooStoresRepository.updateStatus(id, 'ACTIVE')
+      return { ordersSynced: orders.length, subscriptionsSynced: 0 }
+    }
+
+    // woocommerce
     if (!store.consumer_key_encrypted || !store.consumer_secret_encrypted) {
       throw new AppError(422, 'NOT_CONFIGURED', 'Credenciais não configuradas')
     }
@@ -120,6 +153,20 @@ export const wooStoresService = {
     await wooStoresRepository.updateStatus(id, 'ACTIVE')
 
     return { imported: orders.length }
+  },
+
+  async saveKiwifyCredentials(id: string, input: SaveKiwifyCredentialsInput) {
+    const store = await wooStoresRepository.findById(id)
+    if (!store) throw new AppError(404, 'NOT_FOUND', 'Loja não encontrada')
+
+    const row = await wooStoresRepository.saveKiwifyCredentials(
+      id,
+      encrypt(input.clientId),
+      encrypt(input.clientSecret),
+      encrypt(input.accountId),
+      input.channelId ?? null,
+    )
+    return sanitizeStore(row)
   },
 
   async clearCredentials(id: string) {

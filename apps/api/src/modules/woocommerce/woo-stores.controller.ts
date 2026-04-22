@@ -15,7 +15,7 @@ export const wooStoresController = {
       const input = z.object({
         name:       z.string().min(1).max(120),
         url:        z.string().url().nullable().optional(),
-        sourceType: z.enum(['woocommerce', 'manual']),
+        sourceType: z.enum(['woocommerce', 'manual', 'kiwify']),
         channelId:  z.string().uuid().nullable().optional(),
       }).parse(req.body)
 
@@ -30,7 +30,7 @@ export const wooStoresController = {
       const input = z.object({
         name:       z.string().min(1).max(120).optional(),
         url:        z.string().url().nullable().optional(),
-        sourceType: z.enum(['woocommerce', 'manual']).optional(),
+        sourceType: z.enum(['woocommerce', 'manual', 'kiwify']).optional(),
         channelId:  z.string().uuid().nullable().optional(),
       }).parse(req.body)
       res.json({ success: true, data: await wooStoresService.updateStore(id, input) })
@@ -55,6 +55,20 @@ export const wooStoresController = {
       }).parse(req.body)
 
       res.json({ success: true, data: await wooStoresService.saveCredentials(id, input) })
+    } catch (err) { next(err) }
+  },
+
+  async saveKiwifyCredentials(req: Request, res: Response, next: NextFunction) {
+    try {
+      const id    = z.string().uuid().parse(req.params.id)
+      const input = z.object({
+        clientId:     z.string().min(1),
+        clientSecret: z.string().min(1),
+        accountId:    z.string().min(1),
+        channelId:    z.string().uuid().nullable().optional(),
+      }).parse(req.body)
+
+      res.json({ success: true, data: await wooStoresService.saveKiwifyCredentials(id, input) })
     } catch (err) { next(err) }
   },
 

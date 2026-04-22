@@ -29,7 +29,10 @@ export const wooStoresRepository = {
 
   async findAllActive(): Promise<WooStoreRow[]> {
     const { rows } = await db.query<WooStoreRow>(
-      `SELECT * FROM woo_stores WHERE status = 'ACTIVE' AND consumer_key_encrypted IS NOT NULL`,
+      `SELECT * FROM woo_stores WHERE status = 'ACTIVE' AND (
+         (source_type = 'woocommerce' AND consumer_key_encrypted IS NOT NULL)
+         OR (source_type = 'kiwify' AND kiwify_client_id_encrypted IS NOT NULL)
+       )`,
     )
     return rows
   },
@@ -113,11 +116,36 @@ export const wooStoresRepository = {
     )
   },
 
+  async saveKiwifyCredentials(
+    id: string,
+    clientIdEncrypted: string,
+    clientSecretEncrypted: string,
+    accountIdEncrypted: string,
+    channelId: string | null,
+  ): Promise<WooStoreRow> {
+    const { rows } = await db.query<WooStoreRow>(
+      `UPDATE woo_stores
+       SET kiwify_client_id_encrypted     = $1,
+           kiwify_client_secret_encrypted = $2,
+           kiwify_account_id_encrypted    = $3,
+           channel_id = COALESCE($4::uuid, channel_id),
+           status     = 'NOT_CONFIGURED',
+           last_error = NULL
+       WHERE id = $5
+       RETURNING *`,
+      [clientIdEncrypted, clientSecretEncrypted, accountIdEncrypted, channelId, id],
+    )
+    return rows[0]
+  },
+
   async clearCredentials(id: string): Promise<WooStoreRow> {
     const { rows } = await db.query<WooStoreRow>(
       `UPDATE woo_stores
-       SET consumer_key_encrypted    = NULL,
-           consumer_secret_encrypted = NULL,
+       SET consumer_key_encrypted         = NULL,
+           consumer_secret_encrypted      = NULL,
+           kiwify_client_id_encrypted     = NULL,
+           kiwify_client_secret_encrypted = NULL,
+           kiwify_account_id_encrypted    = NULL,
            status     = 'NOT_CONFIGURED',
            last_error = NULL,
            last_sync_at = NULL

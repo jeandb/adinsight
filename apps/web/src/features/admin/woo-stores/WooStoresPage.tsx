@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ShoppingBag, CheckCircle2, AlertCircle, Settings, RefreshCw,
-  Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff, Pencil,
+  Trash2, X, Plus, Upload, Download, FileText, Wifi, WifiOff, Pencil, ShoppingCart,
 } from 'lucide-react'
 import { wooStoresApi, type WooStore, type WooSourceType } from './woo-stores.api'
 import { channelsApi, type Channel } from '@/features/admin/channels/channels.api'
@@ -77,10 +77,11 @@ function CreateStoreModal({ onClose }: { onClose: () => void }) {
           {/* Source type selector */}
           <div>
             <label className={labelCls}>Tipo de integração</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {([
-                { value: 'woocommerce', label: 'WooCommerce API', icon: Wifi,      desc: 'Sync automático via REST API' },
-                { value: 'manual',      label: 'Importação manual', icon: Upload, desc: 'Upload de arquivo Excel/CSV' },
+                { value: 'woocommerce', label: 'WooCommerce API',   icon: Wifi,         desc: 'Sync automático via REST API' },
+                { value: 'kiwify',      label: 'Kiwify',            icon: ShoppingCart, desc: 'Sync automático via API Kiwify' },
+                { value: 'manual',      label: 'Importação manual', icon: Upload,       desc: 'Upload de arquivo Excel/CSV' },
               ] as const).map(({ value, label, icon: Icon, desc }) => (
                 <button
                   key={value}
@@ -195,7 +196,7 @@ function EditStoreModal({ store, onClose }: { store: WooStore; onClose: () => vo
 
           <div>
             <label className={labelCls}>Tipo de integração</label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {([
                 { value: 'woocommerce', label: 'WooCommerce API', icon: Wifi,    desc: 'Sync automático via REST API' },
                 { value: 'manual',      label: 'Importação manual', icon: Upload, desc: 'Upload de arquivo Excel/CSV' },
@@ -355,6 +356,103 @@ function CredentialsModal({ store, onClose }: { store: WooStore; onClose: () => 
   )
 }
 
+// ─── Kiwify Credentials Modal ────────────────────────────────────────────────
+
+function KiwifyCredentialsModal({ store, onClose }: { store: WooStore; onClose: () => void }) {
+  const qc = useQueryClient()
+  const [clientId,     setClientId]     = useState('')
+  const [clientSecret, setClientSecret] = useState('')
+  const [accountId,    setAccountId]    = useState('')
+
+  const save = useMutation({
+    mutationFn: () => wooStoresApi.saveKiwifyCredentials(store.id, { clientId, clientSecret, accountId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['woo-stores'] })
+      onClose()
+    },
+  })
+
+  const inputCls = 'w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground text-sm font-mono focus:outline-none focus:ring-2 focus:ring-ring'
+  const labelCls = 'block text-xs font-medium text-muted-foreground mb-1'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="bg-card border border-border rounded-xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h2 className="text-sm font-semibold text-foreground">Credenciais Kiwify — {store.name}</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form
+          onSubmit={(e) => { e.preventDefault(); save.mutate() }}
+          className="p-5 space-y-4"
+        >
+          <p className="text-xs text-muted-foreground">
+            Acesse o painel Kiwify em <strong>Configurações → Integrações → API</strong> para obter as credenciais OAuth.
+          </p>
+
+          <div>
+            <label className={labelCls}>Client ID</label>
+            <input
+              required
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>Client Secret</label>
+            <input
+              required
+              type="password"
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              placeholder="••••••••••••••••••••••••••••••••"
+              className={inputCls}
+            />
+          </div>
+
+          <div>
+            <label className={labelCls}>Account ID</label>
+            <input
+              required
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+              placeholder="Ex: 4wR4Ho8v9gqMsAu"
+              className={inputCls}
+            />
+          </div>
+
+          {save.isError && (
+            <p className="text-xs text-destructive">{(save.error as Error).message}</p>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-lg border border-border text-sm text-foreground hover:bg-accent transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={save.isPending}
+              className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {save.isPending ? 'Salvando...' : 'Salvar credenciais'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 // ─── File Import Zone ─────────────────────────────────────────────────────────
 
 function FileImportZone({ store }: { store: WooStore }) {
@@ -458,8 +556,9 @@ function FileImportZone({ store }: { store: WooStore }) {
 
 function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }) {
   const qc = useQueryClient()
-  const [showCredentials, setShowCredentials] = useState(false)
-  const [showEdit,        setShowEdit]        = useState(false)
+  const [showCredentials,       setShowCredentials]       = useState(false)
+  const [showKiwifyCredentials, setShowKiwifyCredentials] = useState(false)
+  const [showEdit,              setShowEdit]              = useState(false)
   const statusCfg = STATUS_CONFIG[store.status]
   const StatusIcon = statusCfg.icon
 
@@ -489,7 +588,20 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
     onSuccess: () => qc.invalidateQueries({ queryKey: ['woo-stores'] }),
   })
 
-  const isWoo = store.sourceType === 'woocommerce'
+  const isWoo    = store.sourceType === 'woocommerce'
+  const isKiwify = store.sourceType === 'kiwify'
+  const isApi    = isWoo || isKiwify
+
+  const BADGE: Record<string, string> = {
+    woocommerce: 'bg-blue-100 text-blue-700',
+    kiwify:      'bg-violet-100 text-violet-700',
+    manual:      'bg-amber-100 text-amber-700',
+  }
+  const BADGE_LABEL: Record<string, string> = {
+    woocommerce: 'WooCommerce',
+    kiwify:      'Kiwify',
+    manual:      'Manual',
+  }
 
   return (
     <>
@@ -498,15 +610,17 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-              {isWoo
-                ? <ShoppingBag className="w-5 h-5 text-muted-foreground" />
-                : <FileText className="w-5 h-5 text-muted-foreground" />
+              {isKiwify
+                ? <ShoppingCart className="w-5 h-5 text-muted-foreground" />
+                : isWoo
+                  ? <ShoppingBag className="w-5 h-5 text-muted-foreground" />
+                  : <FileText className="w-5 h-5 text-muted-foreground" />
               }
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground truncate">{store.name}</p>
               <p className="text-xs text-muted-foreground">
-                {isWoo ? store.url ?? 'URL não configurada' : 'Importação manual'}
+                {isWoo ? store.url ?? 'URL não configurada' : isKiwify ? 'API Kiwify' : 'Importação manual'}
               </p>
             </div>
           </div>
@@ -516,10 +630,8 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
               {statusCfg.label}
             </span>
             {/* Source type badge */}
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-              isWoo ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-            }`}>
-              {isWoo ? 'API' : 'Manual'}
+            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${BADGE[store.sourceType] ?? BADGE.manual}`}>
+              {BADGE_LABEL[store.sourceType] ?? store.sourceType}
             </span>
             {/* Edit button */}
             <button
@@ -572,10 +684,10 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
 
         {/* Actions — branch by source type */}
         <div className="flex-1">
-          {isWoo ? (
+          {isApi ? (
             <div className="flex flex-wrap items-center gap-2">
               <button
-                onClick={() => setShowCredentials(true)}
+                onClick={() => isKiwify ? setShowKiwifyCredentials(true) : setShowCredentials(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 border border-border rounded-lg text-xs font-medium text-foreground hover:bg-accent transition-colors"
               >
                 <Settings className="w-3.5 h-3.5" />
@@ -641,6 +753,10 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
 
       {showCredentials && (
         <CredentialsModal store={store} onClose={() => setShowCredentials(false)} />
+      )}
+
+      {showKiwifyCredentials && (
+        <KiwifyCredentialsModal store={store} onClose={() => setShowKiwifyCredentials(false)} />
       )}
 
       {showEdit && (

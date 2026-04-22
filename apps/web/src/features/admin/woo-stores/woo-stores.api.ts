@@ -1,7 +1,7 @@
 import { apiClient } from '@/lib/api/client'
 
 export type WooStoreStatus = 'NOT_CONFIGURED' | 'ACTIVE' | 'ERROR'
-export type WooSourceType  = 'woocommerce' | 'manual'
+export type WooSourceType  = 'woocommerce' | 'manual' | 'kiwify'
 
 export interface WooStore {
   id: string
@@ -55,6 +55,9 @@ export const wooStoresApi = {
 
   saveCredentials: (id: string, payload: { consumerKey: string; consumerSecret: string; channelId?: string | null }) =>
     apiClient.patch<{ data: WooStore }>(`/woo-stores/${id}/credentials`, payload).then((r) => r.data.data),
+
+  saveKiwifyCredentials: (id: string, payload: { clientId: string; clientSecret: string; accountId: string; channelId?: string | null }) =>
+    apiClient.patch<{ data: WooStore }>(`/woo-stores/${id}/kiwify-credentials`, payload).then((r) => r.data.data),
 
   testConnection: (id: string) =>
     apiClient.post<{ data: { ok: boolean; error?: string } }>(`/woo-stores/${id}/test-connection`).then((r) => r.data.data),

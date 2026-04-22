@@ -1,5 +1,5 @@
 export type WooStoreStatus   = 'NOT_CONFIGURED' | 'ACTIVE' | 'ERROR'
-export type WooSourceType    = 'woocommerce' | 'manual'
+export type WooSourceType    = 'woocommerce' | 'manual' | 'kiwify'
 export type WooOrderStatus   = 'pending' | 'processing' | 'on-hold' | 'completed' | 'cancelled' | 'refunded' | 'failed'
 export type WooSubscriptionStatus = 'active' | 'cancelled' | 'expired' | 'on-hold' | 'pending' | 'pending-cancel'
 
@@ -13,6 +13,9 @@ export interface WooStoreRow {
   channel_id: string | null
   consumer_key_encrypted: string | null
   consumer_secret_encrypted: string | null
+  kiwify_client_id_encrypted: string | null
+  kiwify_client_secret_encrypted: string | null
+  kiwify_account_id_encrypted: string | null
   status: WooStoreStatus
   last_error: string | null
   last_sync_at: Date | null
@@ -59,6 +62,13 @@ export interface CreateStoreInput {
 export interface SaveCredentialsInput {
   consumerKey: string
   consumerSecret: string
+  channelId?: string | null
+}
+
+export interface SaveKiwifyCredentialsInput {
+  clientId: string
+  clientSecret: string
+  accountId: string
   channelId?: string | null
 }
 

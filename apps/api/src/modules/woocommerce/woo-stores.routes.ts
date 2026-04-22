@@ -27,8 +27,11 @@ router.patch('/:id', requireRole(UserRole.ADMIN), wooStoresController.updateStor
 // DELETE /api/woo-stores/:id        — delete store (admin only)
 router.delete('/:id', requireRole(UserRole.ADMIN), wooStoresController.deleteStore)
 
-// PATCH /api/woo-stores/:id/credentials  — save/update credentials (admin only)
+// PATCH /api/woo-stores/:id/credentials          — save WooCommerce credentials (admin only)
 router.patch('/:id/credentials', requireRole(UserRole.ADMIN), wooStoresController.saveCredentials)
+
+// PATCH /api/woo-stores/:id/kiwify-credentials   — save Kiwify credentials (admin only)
+router.patch('/:id/kiwify-credentials', requireRole(UserRole.ADMIN), wooStoresController.saveKiwifyCredentials)
 
 // DELETE /api/woo-stores/:id/credentials
 router.delete('/:id/credentials', requireRole(UserRole.ADMIN), wooStoresController.clearCredentials)
