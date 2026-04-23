@@ -38,16 +38,16 @@ interface KiwifyOrdersResponse {
 }
 
 async function getAccessToken(creds: KiwifyCredentials): Promise<string> {
-  const body = new URLSearchParams({
-    client_id:     creds.clientId,
-    client_secret: creds.clientSecret,
-    grant_type:    'client_credentials',
-  })
+  const basicAuth = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64')
 
   const res = await fetch(`${KIWIFY_BASE}/oauth/token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-    body: body.toString(),
+    headers: {
+      'Authorization': `Basic ${basicAuth}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json',
+    },
+    body: 'grant_type=client_credentials',
     signal: AbortSignal.timeout(15_000),
   })
 
