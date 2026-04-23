@@ -32,7 +32,8 @@ interface KiwifyRawSale {
   id: string
   status: string
   customer: { email?: string }
-  product: { price?: number }
+  net_amount?: number
+  payment?: { charge_amount?: number; product_base_price?: number }
   created_at: string
   approved_date?: string | null
 }
@@ -81,8 +82,9 @@ async function fetchAllSales(
     const params = new URLSearchParams({
       start_date,
       end_date,
-      page_size:   '100',
-      page_number: String(page),
+      page_size:             '100',
+      page_number:           String(page),
+      view_full_sale_details: 'true',
     })
 
     const res = await fetch(`${KIWIFY_API_V1}/sales?${params}`, {
@@ -147,7 +149,7 @@ export async function syncKiwifyOrders(
     externalId:    o.id,
     status:        (STATUS_MAP[o.status] ?? 'pending') as WooOrderStatus,
     customerEmail: o.customer?.email ?? null,
-    totalCents:    Math.round((o.product?.price ?? 0) * 100),
+    totalCents:    Math.round((o.payment?.charge_amount ?? o.net_amount ?? 0) * 100),
     paidAt:        o.approved_date ?? null,
     orderDate:     o.created_at,
   }))
