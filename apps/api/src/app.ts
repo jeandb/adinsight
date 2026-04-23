@@ -22,6 +22,13 @@ import { startSyncWooWorker } from './shared/queue/sync-woocommerce.worker'
 import { startAiAnalysisWorker } from './shared/queue/ai-analysis.worker'
 import { startSendReportWorker } from './shared/queue/send-report.worker'
 import { initScheduler } from './config/scheduler'
+import { runMigrations } from './shared/database/migration-runner'
+
+// Run pending migrations before accepting requests
+runMigrations().catch((err) => {
+  console.error('❌ Migration falhou no startup:', err)
+  process.exit(1)
+})
 
 const app: Application = express()
 
