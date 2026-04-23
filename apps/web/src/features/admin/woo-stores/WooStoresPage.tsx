@@ -585,7 +585,11 @@ function StoreCard({ store, channels }: { store: WooStore; channels: Channel[] }
 
   const deleteStore = useMutation({
     mutationFn: () => wooStoresApi.deleteStore(store.id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['woo-stores'] }),
+    onSuccess: () => {
+      qc.setQueryData<WooStore[]>(['woo-stores'], (old) =>
+        old ? old.filter((s) => s.id !== store.id) : []
+      )
+    },
   })
 
   const isWoo    = store.sourceType === 'woocommerce'
