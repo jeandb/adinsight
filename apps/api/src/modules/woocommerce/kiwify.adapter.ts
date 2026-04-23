@@ -6,7 +6,8 @@ export interface KiwifyCredentials {
   accountId: string
 }
 
-const KIWIFY_BASE = 'https://api.kiwify.com.br'
+const KIWIFY_BASE    = 'https://public-api.kiwify.com'
+const KIWIFY_API_V1  = `${KIWIFY_BASE}/v1`
 
 const STATUS_MAP: Record<string, WooOrderStatus> = {
   paid:            'completed',
@@ -40,14 +41,10 @@ interface KiwifyOrdersResponse {
 async function getAccessToken(creds: KiwifyCredentials): Promise<string> {
   const basicAuth = Buffer.from(`${creds.clientId}:${creds.clientSecret}`).toString('base64')
 
-  const res = await fetch(`${KIWIFY_BASE}/oauth/token`, {
+  const res = await fetch(`${KIWIFY_API_V1}/oauth/token`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Basic ${basicAuth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'Accept': 'application/json',
-    },
-    body: 'grant_type=client_credentials',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' },
+    body: new URLSearchParams({ client_id: creds.clientId, client_secret: creds.clientSecret }).toString(),
     signal: AbortSignal.timeout(15_000),
   })
 
@@ -74,7 +71,7 @@ async function fetchAllOrders(
       limit:      '100',
     })
 
-    const res = await fetch(`${KIWIFY_BASE}/v1/orders?${params}`, {
+    const res = await fetch(`${KIWIFY_API_V1}/orders?${params}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(20_000),
     })
@@ -100,7 +97,7 @@ export async function testKiwifyConnection(
   try {
     const token = await getAccessToken(creds)
     const params = new URLSearchParams({ account_id: creds.accountId, page: '1', limit: '1' })
-    const res = await fetch(`${KIWIFY_BASE}/v1/orders?${params}`, {
+    const res = await fetch(`${KIWIFY_API_V1}/orders?${params}`, {
       headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
       signal: AbortSignal.timeout(15_000),
     })
